@@ -1,0 +1,60 @@
+package com.lukeneedham.lyrictutor.data.annotation
+
+import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.settings.SettingsStore
+import com.lukeneedham.lyrictutor.data.track.TrackInfo
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+
+/** Annotates with the Gemini API, using the user's own key from Settings (it is never in the app). */
+class GeminiAnnotator(
+    private val client: HttpClient,
+    private val settingsStore: SettingsStore,
+) : LyricsAnnotator {
+
+    override val providerName = "gemini"
+
+    override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
+        val settings = settingsStore.load()
+        if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
+
+        val body = try {
+            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent") {
+                header("x-goog-api-key", settings.apiKey)
+                contentType(ContentType.Application.Json)
+                timeout { requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS }
+                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.requestBody(song, lines)))
+            }
+            when {
+                response.status == HttpStatusCode.TooManyRequests -> return Result.failure(AnnotationException.RateLimited())
+                response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden ||
+                    response.status == HttpStatusCode.BadRequest && response.bodyAsText().contains("API key") ->
+                    return Result.failure(AnnotationException.InvalidKey())
+                !response.status.isSuccess() ->
+                    return Result.failure(AnnotationException.Failed("Gemini answered ${response.status}"))
+            }
+            response.bodyAsText()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Logger.e("Gemini request failed", e)
+            return Result.failure(AnnotationException.Failed("Gemini could not be reached", e))
+        }
+        return GeminiProtocol.parseResponse(body).onFailure { Logger.e("Gemini answer unusable", it) }
+    }
+
+    private companion object {
+        const val REQUEST_TIMEOUT_MILLIS = 120_000L
+    }
+}

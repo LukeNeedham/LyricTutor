@@ -1,5 +1,6 @@
 package com.lukeneedham.lyrictutor.data
 
+import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
@@ -38,6 +39,24 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
 
     override suspend fun saveLyrics(trackId: String, lyrics: Lyrics) {
         dao.insertLyrics(LyricsEntity(trackId = trackId, json = json.encodeToString(Lyrics.serializer(), lyrics)))
+    }
+
+    override suspend fun getAnnotations(trackId: String): List<LineAnnotation> =
+        dao.getAnnotations(trackId).map { json.decodeFromString(LineAnnotation.serializer(), it.json) }
+
+    override suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>) {
+        val now = System.currentTimeMillis()
+        dao.insertAnnotations(
+            annotations.map {
+                AnnotationEntity(
+                    trackId = trackId,
+                    lineIndex = it.index,
+                    json = json.encodeToString(LineAnnotation.serializer(), it),
+                    provider = provider,
+                    createdAt = now,
+                )
+            },
+        )
     }
 
     private fun SongEntity.toTrack() = TrackInfo(

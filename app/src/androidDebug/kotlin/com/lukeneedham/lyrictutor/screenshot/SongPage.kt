@@ -2,6 +2,8 @@ package com.lukeneedham.lyrictutor.screenshot
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
+import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
@@ -32,7 +34,19 @@ private fun SongPageScreenshot() {
         ),
         source = LyricsSourceKind.Lrclib,
     )
-    val state = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Found(lyrics))
+    val annotations = mapOf(
+        0 to LineAnnotation(
+            index = 0,
+            translation = "If I go, I go with you",
+            words = listOf(
+                WordAnnotation(surface = "voy", lemma = "ir", meaning = "I go"),
+                WordAnnotation(surface = "contigo", lemma = "contigo", meaning = "with you"),
+            ),
+        ),
+        1 to LineAnnotation(index = 1, translation = "And if I stay, I stay with you"),
+        2 to LineAnnotation(index = 2, translation = "I am going to stay with you"),
+    )
+    val state = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Found(lyrics), annotations = annotations)
     AppTheme {
         SongPageContent(
             state = state,
@@ -42,6 +56,10 @@ private fun SongPageScreenshot() {
             onPasteChange = {},
             onSavePaste = {},
             onClosePaste = {},
+            onRetryAnnotations = {},
+            onOpenSettings = {},
+            onWordClick = {},
+            onWordDismiss = {},
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.lukeneedham.lyrictutor.data.lyrics
 
+import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlin.test.Test
@@ -30,6 +31,8 @@ class LyricsRepositoryTest {
         override suspend fun saveTrack(track: TrackInfo) = Unit
         override suspend fun getLyrics(trackId: String): Lyrics? = savedLyrics[trackId]
         override suspend fun saveLyrics(trackId: String, lyrics: Lyrics) { savedLyrics[trackId] = lyrics }
+        override suspend fun getAnnotations(trackId: String): List<LineAnnotation> = emptyList()
+        override suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>) = Unit
     }
 
     private class FakeSource(private val result: Result<Lyrics?>) : LyricsSource {

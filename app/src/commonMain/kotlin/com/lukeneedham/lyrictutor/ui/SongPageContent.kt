@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,11 +31,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
+import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
+import com.lukeneedham.lyrictutor.generated.resources.annotation_failed
+import com.lukeneedham.lyrictutor.generated.resources.annotation_invalid_key
+import com.lukeneedham.lyrictutor.generated.resources.annotation_loading
+import com.lukeneedham.lyrictutor.generated.resources.annotation_missing_key
+import com.lukeneedham.lyrictutor.generated.resources.annotation_open_settings
+import com.lukeneedham.lyrictutor.generated.resources.annotation_rate_limited
+import com.lukeneedham.lyrictutor.generated.resources.annotation_retry
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_error
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_loading
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_not_found
@@ -62,6 +73,10 @@ internal fun SongPageContent(
     onPasteChange: (String) -> Unit,
     onSavePaste: () -> Unit,
     onClosePaste: () -> Unit,
+    onRetryAnnotations: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onWordClick: (WordAnnotation) -> Unit,
+    onWordDismiss: () -> Unit,
 ) {
     val theme = AppTheme.current
     Box(
@@ -97,7 +112,16 @@ internal fun SongPageContent(
                         if (lyrics.lyrics.source == LyricsSourceKind.Pasted) {
                             item { Message(text = stringResource(Res.string.lyrics_pasted_note), isSubtle = true) }
                         }
-                        itemsIndexed(lyrics.lyrics.lines) { _, line -> LyricLineRow(line) }
+                        item {
+                            AnnotationNotice(
+                                status = state.annotationStatus,
+                                onRetry = onRetryAnnotations,
+                                onOpenSettings = onOpenSettings,
+                            )
+                        }
+                        itemsIndexed(lyrics.lyrics.lines) { index, line ->
+                            LyricLineRow(line = line, annotation = state.annotations[index], onWordClick = onWordClick)
+                        }
                     }
 
                     LyricsUiState.NotFound, LyricsUiState.Error -> item {
@@ -114,6 +138,7 @@ internal fun SongPageContent(
                 }
             }
         }
+        if (state is SongUiState.Loaded) WordSheet(word = state.selectedWord, onDismiss = onWordDismiss)
     }
 }
 
@@ -146,13 +171,65 @@ private fun Header(track: TrackInfo) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LyricLineRow(line: LyricLine) {
+private fun LyricLineRow(line: LyricLine, annotation: LineAnnotation?, onWordClick: (WordAnnotation) -> Unit) {
     val theme = AppTheme.current
-    BasicText(
-        text = line.text,
-        style = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 18.sp, lineHeight = 26.sp),
-    )
+    val textStyle = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 18.sp, lineHeight = 26.sp)
+    Column {
+        if (annotation == null || annotation.words.isEmpty()) {
+            BasicText(text = line.text, style = textStyle)
+        } else {
+            // Each word of the line that the model explained can be tapped; the others (and any it left out) are plain text
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (token in line.text.split(' ').filter { it.isNotEmpty() }) {
+                    val word = annotation.words.firstOrNull { it.surface.normalizedWord() == token.normalizedWord() }
+                    Box(
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .then(if (word != null) Modifier.clickable { onWordClick(word) } else Modifier),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        BasicText(
+                            text = token,
+                            style = if (word != null) textStyle.copy(color = theme.primary) else textStyle,
+                        )
+                    }
+                }
+            }
+        }
+        annotation?.translation?.let { translation ->
+            BasicText(
+                text = translation,
+                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 15.sp, lineHeight = 22.sp),
+            )
+        }
+    }
+}
+
+/** Compares a word of the line with a word of the annotation: case and punctuation do not count. */
+private fun String.normalizedWord(): String = lowercase().filter { it.isLetterOrDigit() }
+
+@Composable
+private fun AnnotationNotice(status: AnnotationStatus, onRetry: () -> Unit, onOpenSettings: () -> Unit) {
+    val message = when (status) {
+        AnnotationStatus.Idle -> return
+        AnnotationStatus.Loading -> stringResource(Res.string.annotation_loading)
+        AnnotationStatus.MissingKey -> stringResource(Res.string.annotation_missing_key)
+        AnnotationStatus.InvalidKey -> stringResource(Res.string.annotation_invalid_key)
+        AnnotationStatus.RateLimited -> stringResource(Res.string.annotation_rate_limited)
+        AnnotationStatus.Failed -> stringResource(Res.string.annotation_failed)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Message(text = message, isError = status != AnnotationStatus.Loading, isSubtle = status == AnnotationStatus.Loading)
+        when (status) {
+            AnnotationStatus.MissingKey, AnnotationStatus.InvalidKey ->
+                Button(text = stringResource(Res.string.annotation_open_settings), onClick = onOpenSettings)
+            AnnotationStatus.RateLimited, AnnotationStatus.Failed ->
+                Button(text = stringResource(Res.string.annotation_retry), onClick = onRetry)
+            else -> Unit
+        }
+    }
 }
 
 @Composable
@@ -281,6 +358,10 @@ private fun PreviewContent(state: SongUiState) {
             onPasteChange = {},
             onSavePaste = {},
             onClosePaste = {},
+            onRetryAnnotations = {},
+            onOpenSettings = {},
+            onWordClick = {},
+            onWordDismiss = {},
         )
     }
 }
@@ -294,6 +375,21 @@ private fun Preview() {
         source = LyricsSourceKind.Lrclib,
     )
     PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics)))
+}
+
+@Preview
+@Composable
+private fun PreviewAnnotated() {
+    val lyrics = Lyrics(
+        lines = listOf(LyricLine("Si me voy, me voy contigo")),
+        source = LyricsSourceKind.Lrclib,
+    )
+    val annotation = LineAnnotation(
+        index = 0,
+        translation = "If I go, I go with you",
+        words = listOf(WordAnnotation(surface = "voy", lemma = "ir", meaning = "I go")),
+    )
+    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics), annotations = mapOf(0 to annotation)))
 }
 
 @Preview

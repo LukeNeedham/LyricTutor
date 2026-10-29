@@ -2,11 +2,16 @@ package com.lukeneedham.lyrictutor.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
+import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
+import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
+import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.track.TrackResolveException
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,10 +23,13 @@ class SongViewModel(
     private val trackResolver: TrackResolver,
     private val songCache: SongCache,
     private val lyricsRepository: LyricsRepository,
+    private val annotationRepository: AnnotationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
     val uiState: StateFlow<SongUiState> = _uiState.asStateFlow()
+
+    private var annotationJob: Job? = null
 
     init {
         load()
@@ -35,6 +43,16 @@ class SongViewModel(
         loadLyrics(loaded.track)
     }
 
+    fun onRetryAnnotations() {
+        val loaded = _uiState.value as? SongUiState.Loaded ?: return
+        val lyrics = (loaded.lyrics as? LyricsUiState.Found)?.lyrics ?: return
+        annotate(loaded.track, lyrics)
+    }
+
+    fun onWordClick(word: WordAnnotation) = updateLoaded { it.copy(selectedWord = word) }
+
+    fun onWordDismiss() = updateLoaded { it.copy(selectedWord = null) }
+
     fun onOpenPaste() = updateLoaded { it.copy(pasteText = "") }
 
     fun onPasteChange(text: String) = updateLoaded { if (it.pasteText != null) it.copy(pasteText = text) else it }
@@ -47,6 +65,7 @@ class SongViewModel(
         viewModelScope.launch {
             val lyrics = lyricsRepository.savePasted(loaded.track, text) ?: return@launch
             updateLoaded { it.copy(lyrics = LyricsUiState.Found(lyrics), pasteText = null) }
+            annotate(loaded.track, lyrics)
         }
     }
 
@@ -72,6 +91,29 @@ class SongViewModel(
                 onFailure = { LyricsUiState.Error },
             )
             updateLoaded { it.copy(lyrics = lyrics) }
+            if (lyrics is LyricsUiState.Found) annotate(track, lyrics.lyrics)
+        }
+    }
+
+    private fun annotate(track: TrackInfo, lyrics: Lyrics) {
+        annotationJob?.cancel()
+        updateLoaded { it.copy(annotationStatus = AnnotationStatus.Loading) }
+        annotationJob = viewModelScope.launch {
+            val result = annotationRepository.annotate(track, lyrics.lines.map { it.text }) { batch ->
+                updateLoaded { it.copy(annotations = it.annotations + batch.associateBy { annotation -> annotation.index }) }
+            }
+            val status = result.fold(
+                onSuccess = { AnnotationStatus.Idle },
+                onFailure = {
+                    when (it) {
+                        is AnnotationException.MissingKey -> AnnotationStatus.MissingKey
+                        is AnnotationException.InvalidKey -> AnnotationStatus.InvalidKey
+                        is AnnotationException.RateLimited -> AnnotationStatus.RateLimited
+                        else -> AnnotationStatus.Failed
+                    }
+                },
+            )
+            updateLoaded { it.copy(annotationStatus = status) }
         }
     }
 

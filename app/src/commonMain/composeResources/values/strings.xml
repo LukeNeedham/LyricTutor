@@ -21,4 +21,27 @@
     <string name="lyrics_paste_save">Save</string>
     <string name="lyrics_paste_cancel">Cancel</string>
     <string name="lyrics_pasted_note">Lyrics pasted by you</string>
+    <string name="settings_ai_title">AI explanations</string>
+    <string name="settings_api_key_label">Gemini API key</string>
+    <string name="settings_model_label">Gemini model</string>
+    <string name="settings_api_key_note">Your own key from Google AI Studio. It is stored encrypted on this device and sent only to Google.</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Saved</string>
+    <string name="settings_attribution">Lyrics come from LRCLIB. Translations and word explanations are written by an AI and can be wrong.</string>
+    <string name="annotation_loading">Translating…</string>
+    <string name="annotation_missing_key">Add your Gemini API key in Settings to see translations and word meanings.</string>
+    <string name="annotation_invalid_key">Gemini refused your API key. Check it in Settings.</string>
+    <string name="annotation_rate_limited">Gemini says you have used up its free limit for now. Try again in a little while.</string>
+    <string name="annotation_failed">Could not get the translations. Check your connection.</string>
+    <string name="annotation_open_settings">Open Settings</string>
+    <string name="annotation_retry">Try again</string>
+    <string name="word_ai_note">Written by an AI: it can be wrong.</string>
+    <string name="word_language">Language</string>
+    <string name="word_lemma">Dictionary form</string>
+    <string name="word_morphology">Form</string>
+    <string name="word_meaning">Meaning here</string>
+    <string name="word_note">Note</string>
+    <string name="word_etymology">Where it comes from</string>
+    <string name="word_cognates">English words with the same root</string>
+    <string name="word_close">Close</string>
 </resources>

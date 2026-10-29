@@ -1,5 +1,7 @@
 package com.lukeneedham.lyrictutor.ui
 
+import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
+import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 
 sealed interface SongUiState {
@@ -10,6 +12,11 @@ sealed interface SongUiState {
         val lyrics: LyricsUiState,
         /** The text in the paste box, or null when the box is closed. */
         val pasteText: String? = null,
+        /** The translation and words of each line that has them, by the index of the line. */
+        val annotations: Map<Int, LineAnnotation> = emptyMap(),
+        val annotationStatus: AnnotationStatus = AnnotationStatus.Idle,
+        /** The word whose sheet is open, or null. */
+        val selectedWord: WordAnnotation? = null,
     ) : SongUiState
 
     /** [isNetwork]: no connection, as opposed to a page the app could not read. */
