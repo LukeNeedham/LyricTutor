@@ -5,12 +5,16 @@
 
 # LyricTutor
 
-TODO: one line saying what the app does.
+Learn a language from the songs you listen to.
 
 ## Description
 
-TODO: what the app is and who it is for, with a few highlights of what it can be used for. A paragraph or two,
-and no feature list.
+LyricTutor turns a Spotify song into a language lesson. Paste a song link, or share it to the app from Spotify, and it reads
+the song's details and shows the lyrics line by line with an English translation. Tap any word to see what it means in
+context, its dictionary form and how it was conjugated, and where it comes from, with English cognates to help it stick.
+
+It works with any language, and is built for real songs: slang, elisions and lines that mix languages. It is a personal app:
+lyrics are fetched on demand and are never stored in the app's code or shared.
 
 ## Screenshots
 
