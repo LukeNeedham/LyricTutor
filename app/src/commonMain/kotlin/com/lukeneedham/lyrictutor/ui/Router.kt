@@ -15,6 +15,13 @@ fun Router(backStack: NavBackStack<NavKey>, route: Route) {
     fun onBack() { backStack.removeLastOrNull() }
 
     when (route) { // exhaustive: no `else`
+        Route.Home -> HomePage(
+            onOpenSong = { trackId -> navigateTo(Route.Song(trackId)) },
+            onOpenSettings = { navigateTo(Route.Settings) },
+        )
+
+        is Route.Song -> SongPage(trackId = route.trackId)
+
         Route.Settings -> SettingsPage(onOpenDebug = { navigateTo(Route.Debug) })
 
         Route.Debug -> DebugPage(

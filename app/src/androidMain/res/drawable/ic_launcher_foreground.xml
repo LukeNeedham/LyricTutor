@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A placeholder: a white diamond inside the safe zone. Replace it with the app's own icon. app-icon.png at the repo root
-     is rendered from this by CI (docs/app-icon.md in ci-workflows). -->
+<!-- A speech bubble with a music note, inside the safe zone. app-icon.png at the repo root is rendered from this by CI
+     (docs/app-icon.md in ci-workflows). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -8,5 +8,8 @@
     android:viewportHeight="108">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,30L78,54L54,78L30,54Z" />
+        android:pathData="M34,32L74,32A6,6 0 0 1 80,38L80,64A6,6 0 0 1 74,70L52,70L38,81L38,70L34,70A6,6 0 0 1 28,64L28,38A6,6 0 0 1 34,32Z" />
+    <path
+        android:fillColor="#3F51B5"
+        android:pathData="M56,40L66,38L66,56A4,4 0 1 1 63,52.2L63,44L59,44.8L59,58A4,4 0 1 1 56,54.2Z" />
 </vector>
