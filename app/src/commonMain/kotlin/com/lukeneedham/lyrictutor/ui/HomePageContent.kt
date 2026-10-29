@@ -5,6 +5,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
+import coil3.compose.AsyncImage
+import com.lukeneedham.lyrictutor.data.track.TrackInfo
+import com.lukeneedham.lyrictutor.generated.resources.home_recents_title
+import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,6 +53,7 @@ internal fun HomePageContent(
     onInputChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSong: (trackId: String) -> Unit,
 ) {
     val theme = AppTheme.current
     Column(
@@ -156,6 +167,59 @@ internal fun HomePageContent(
                 ),
             )
         }
+
+        if (state.recents.isNotEmpty()) {
+            BasicText(
+                text = stringResource(Res.string.home_recents_title),
+                style = TextStyle(
+                    color = theme.onBackground,
+                    fontFamily = theme.fontFamily,
+                    fontSize = 18.sp,
+                    lineHeight = 26.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+            )
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(state.recents, key = { it.trackId }) { track -> RecentRow(track, onClick = { onOpenSong(track.trackId) }) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentRow(track: TrackInfo, onClick: () -> Unit) {
+    val theme = AppTheme.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AsyncImage(
+            model = track.coverUrl,
+            contentDescription = stringResource(Res.string.song_cover_description),
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(theme.surface),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            BasicText(
+                text = track.title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp),
+            )
+            BasicText(
+                text = track.artists.joinToString(", "),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 14.sp, lineHeight = 20.sp),
+            )
+        }
     }
 }
 
@@ -164,7 +228,7 @@ internal fun HomePageContent(
 @Composable
 private fun Preview() {
     AppTheme {
-        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onOpenSettings = {})
+        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onOpenSettings = {}, onOpenSong = {})
     }
 }
 
@@ -177,6 +241,7 @@ private fun PreviewInvalidLink() {
             onInputChange = {},
             onSubmit = {},
             onOpenSettings = {},
+            onOpenSong = {},
         )
     }
 }

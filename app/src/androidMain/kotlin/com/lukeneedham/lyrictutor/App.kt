@@ -1,6 +1,7 @@
 package com.lukeneedham.lyrictutor
 
 import android.app.Application
+import com.lukeneedham.lyrictutor.di.androidModule
 import com.lukeneedham.lyrictutor.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -12,7 +13,7 @@ class App : Application() {
         initDebugKit(BuildConfig.DEBUG)
         startKoin {
             androidContext(this@App)
-            modules(appModule)
+            modules(appModule, androidModule)
         }
     }
 }

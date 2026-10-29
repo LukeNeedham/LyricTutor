@@ -25,5 +25,6 @@ fun HomePage(onOpenSong: (trackId: String) -> Unit, onOpenSettings: () -> Unit) 
         onInputChange = viewModel::onInputChange,
         onSubmit = viewModel::onSubmit,
         onOpenSettings = onOpenSettings,
+        onOpenSong = onOpenSong,
     )
 }
