@@ -1,6 +1,6 @@
 package com.lukeneedham.lyrictutor.data.track
 
-import com.lukeneedham.common.Logger
+import com.lukeneedham.common.logger.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
