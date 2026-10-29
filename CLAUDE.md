@@ -22,3 +22,4 @@
   push (the README, the screenshots), so your local copy of the remote branch is out of date and Git thinks commits are local only. Never amend,
   rebase or force-push to silence the hook, never edit the hook, and do not write about it at length.
 <!-- ci-workflows:end -->
+- **Read `docs/mvp-handover.md` first**: what the app is, the decisions already made, what exists, the rules, the data sources (Spotify page, LRCLIB, Gemini), the page and PR plan, and what is still unverified.
