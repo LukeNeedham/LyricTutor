@@ -11,5 +11,13 @@ import org.koin.core.parameter.parametersOf
 fun SongPage(trackId: String) {
     val viewModel = koinViewModel<SongViewModel>(key = trackId) { parametersOf(trackId) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    SongPageContent(state = state, onRetry = viewModel::onRetry)
+    SongPageContent(
+        state = state,
+        onRetry = viewModel::onRetry,
+        onRetryLyrics = viewModel::onRetryLyrics,
+        onOpenPaste = viewModel::onOpenPaste,
+        onPasteChange = viewModel::onPasteChange,
+        onSavePaste = viewModel::onSavePaste,
+        onClosePaste = viewModel::onClosePaste,
+    )
 }

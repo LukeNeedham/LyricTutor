@@ -19,3 +19,6 @@
 # The shared library's logs and crashes pages read these by serialization (docs/using-the-library.md in ci-workflows)
 -keep class com.lukeneedham.common.logger.LogEntry { *; }
 -keep class com.lukeneedham.common.crash.CrashEntry { *; }
+
+# Room: the generated database implementation is created by reflection
+-keep class * extends androidx.room.RoomDatabase
