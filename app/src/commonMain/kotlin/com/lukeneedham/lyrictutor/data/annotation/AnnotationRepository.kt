@@ -1,7 +1,9 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
+import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
+import kotlinx.coroutines.delay
 
 /**
  * Annotates the lines of a song a few at a time (the free tier limits requests), keeping every batch on the device so that a line
@@ -26,9 +28,17 @@ class AnnotationRepository(
         for (batch in missing.chunked(BATCH_SIZE)) {
             val result = annotator.annotate(track, batch).let { first ->
                 // A missing or refused key will not get better by asking again
-                if (first.isSuccess || first.exceptionOrNull() !is AnnotationException.Failed) first else annotator.annotate(track, batch)
+                if (first.isSuccess || first.exceptionOrNull() !is AnnotationException.Failed) {
+                    first
+                } else {
+                    delay(RETRY_DELAY_MILLIS)
+                    annotator.annotate(track, batch)
+                }
             }
-            val annotations = result.getOrElse { return Result.failure(it) }
+            val annotations = result.getOrElse {
+                Logger.e("Annotating lines ${batch.first().index}-${batch.last().index} of ${track.title} failed", it)
+                return Result.failure(it)
+            }
                 .filter { annotation -> batch.any { it.index == annotation.index } }
             songCache.saveAnnotations(track.trackId, annotator.providerName, annotations)
             onBatch(annotations)
@@ -38,5 +48,6 @@ class AnnotationRepository(
 
     companion object {
         const val BATCH_SIZE = 15
+        private const val RETRY_DELAY_MILLIS = 2_000L
     }
 }

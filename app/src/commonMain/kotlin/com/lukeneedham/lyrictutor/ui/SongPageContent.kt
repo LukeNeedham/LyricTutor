@@ -115,6 +115,7 @@ internal fun SongPageContent(
                         item {
                             AnnotationNotice(
                                 status = state.annotationStatus,
+                                detail = state.annotationDetail,
                                 onRetry = onRetryAnnotations,
                                 onOpenSettings = onOpenSettings,
                             )
@@ -211,7 +212,7 @@ private fun LyricLineRow(line: LyricLine, annotation: LineAnnotation?, onWordCli
 private fun String.normalizedWord(): String = lowercase().filter { it.isLetterOrDigit() }
 
 @Composable
-private fun AnnotationNotice(status: AnnotationStatus, onRetry: () -> Unit, onOpenSettings: () -> Unit) {
+private fun AnnotationNotice(status: AnnotationStatus, detail: String?, onRetry: () -> Unit, onOpenSettings: () -> Unit) {
     val message = when (status) {
         AnnotationStatus.Idle -> return
         AnnotationStatus.Loading -> stringResource(Res.string.annotation_loading)
@@ -222,6 +223,7 @@ private fun AnnotationNotice(status: AnnotationStatus, onRetry: () -> Unit, onOp
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Message(text = message, isError = status != AnnotationStatus.Loading, isSubtle = status == AnnotationStatus.Loading)
+        if (detail != null) Message(text = detail, isSubtle = true)
         when (status) {
             AnnotationStatus.MissingKey, AnnotationStatus.InvalidKey ->
                 Button(text = stringResource(Res.string.annotation_open_settings), onClick = onOpenSettings)

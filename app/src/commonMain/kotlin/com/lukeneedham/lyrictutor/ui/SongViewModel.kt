@@ -97,7 +97,7 @@ class SongViewModel(
 
     private fun annotate(track: TrackInfo, lyrics: Lyrics) {
         annotationJob?.cancel()
-        updateLoaded { it.copy(annotationStatus = AnnotationStatus.Loading) }
+        updateLoaded { it.copy(annotationStatus = AnnotationStatus.Loading, annotationDetail = null) }
         annotationJob = viewModelScope.launch {
             val result = annotationRepository.annotate(track, lyrics.lines.map { it.text }) { batch ->
                 updateLoaded { it.copy(annotations = it.annotations + batch.associateBy { annotation -> annotation.index }) }
@@ -113,7 +113,8 @@ class SongViewModel(
                     }
                 },
             )
-            updateLoaded { it.copy(annotationStatus = status) }
+            val detail = if (status == AnnotationStatus.Failed) result.exceptionOrNull()?.message else null
+            updateLoaded { it.copy(annotationStatus = status, annotationDetail = detail) }
         }
     }
 

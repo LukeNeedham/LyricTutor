@@ -36,20 +36,26 @@ class GeminiAnnotator(
                 timeout { requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS }
                 setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.requestBody(song, lines)))
             }
-            when {
-                response.status == HttpStatusCode.TooManyRequests -> return Result.failure(AnnotationException.RateLimited())
-                response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden ||
-                    response.status == HttpStatusCode.BadRequest && response.bodyAsText().contains("API key") ->
-                    return Result.failure(AnnotationException.InvalidKey())
-                !response.status.isSuccess() ->
-                    return Result.failure(AnnotationException.Failed("Gemini answered ${response.status}"))
+            val text = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                val reason = GeminiProtocol.errorMessage(text)
+                Logger.e("Gemini answered ${response.status} for model ${settings.model}: ${text.take(500)}")
+                return Result.failure(
+                    when {
+                        response.status == HttpStatusCode.TooManyRequests -> AnnotationException.RateLimited()
+                        response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden ||
+                            response.status == HttpStatusCode.BadRequest && reason?.contains("API key", ignoreCase = true) == true ->
+                            AnnotationException.InvalidKey()
+                        else -> AnnotationException.Failed("Gemini answered ${response.status.value}: ${reason ?: text.take(200)}")
+                    },
+                )
             }
-            response.bodyAsText()
+            text
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Logger.e("Gemini request failed", e)
-            return Result.failure(AnnotationException.Failed("Gemini could not be reached", e))
+            return Result.failure(AnnotationException.Failed("Gemini could not be reached: ${e.message ?: e::class.simpleName}", e))
         }
         return GeminiProtocol.parseResponse(body).onFailure { Logger.e("Gemini answer unusable", it) }
     }

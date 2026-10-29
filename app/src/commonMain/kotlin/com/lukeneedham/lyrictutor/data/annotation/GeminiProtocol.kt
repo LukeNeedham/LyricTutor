@@ -109,6 +109,13 @@ object GeminiProtocol {
         }
     }
 
+    /** The message of an error answer (`{"error":{"message":"..."}}`), or null when the body is not one. */
+    fun errorMessage(body: String): String? = try {
+        json.decodeFromString(ErrorResponse.serializer(), body).error?.message
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
     /** The annotations in a `generateContent` response body. Fails with [AnnotationException.Failed] when there is no usable answer. */
     fun parseResponse(body: String): Result<List<LineAnnotation>> = try {
         val response = json.decodeFromString(Response.serializer(), body)
@@ -124,6 +131,12 @@ object GeminiProtocol {
     } catch (e: IllegalArgumentException) {
         Result.failure(AnnotationException.Failed("Gemini's answer could not be read", e))
     }
+
+    @Serializable
+    private data class ErrorResponse(val error: ErrorBody? = null)
+
+    @Serializable
+    private data class ErrorBody(val message: String? = null)
 
     @Serializable
     private data class Response(val candidates: List<Candidate> = emptyList())

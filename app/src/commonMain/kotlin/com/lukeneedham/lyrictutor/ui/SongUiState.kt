@@ -15,6 +15,8 @@ sealed interface SongUiState {
         /** The translation and words of each line that has them, by the index of the line. */
         val annotations: Map<Int, LineAnnotation> = emptyMap(),
         val annotationStatus: AnnotationStatus = AnnotationStatus.Idle,
+        /** Why the last annotation attempt failed, for [AnnotationStatus.Failed]: shown as it is, to help find the cause. */
+        val annotationDetail: String? = null,
         /** The word whose sheet is open, or null. */
         val selectedWord: WordAnnotation? = null,
     ) : SongUiState
