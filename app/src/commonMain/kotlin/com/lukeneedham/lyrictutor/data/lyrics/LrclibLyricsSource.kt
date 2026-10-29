@@ -13,6 +13,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -64,15 +65,35 @@ class LrclibLyricsSource(private val client: HttpClient) : LyricsSource {
         return LrclibTrack.pickBest(results, track.durationSeconds)?.toLyrics()
     }
 
-    private suspend fun request(path: String, parameters: HttpRequestBuilder.() -> Unit): HttpResponse =
-        oneAtATime.withLock {
-            client.get("https://lrclib.net/api/$path") {
-                header(HttpHeaders.UserAgent, USER_AGENT)
-                parameters()
+    /** One request at a time. A timeout, a dropped connection, a 429 or a 5xx is tried again a couple of times: LRCLIB is often slow on a cold lookup. */
+    private suspend fun request(path: String, parameters: HttpRequestBuilder.() -> Unit): HttpResponse {
+        var attempt = 1
+        while (true) {
+            try {
+                val response = oneAtATime.withLock {
+                    client.get("https://lrclib.net/api/$path") {
+                        header(HttpHeaders.UserAgent, USER_AGENT)
+                        parameters()
+                    }
+                }
+                if (!response.status.isTransientFailure() || attempt >= MAX_ATTEMPTS) return response
+                Logger.w("LRCLIB request /$path answered ${response.status} (attempt $attempt)")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (attempt >= MAX_ATTEMPTS) throw e
+                Logger.w("LRCLIB request /$path failed (attempt $attempt)", e)
             }
+            delay(RETRY_DELAY_MILLIS * attempt)
+            attempt++
         }
+    }
+
+    private fun HttpStatusCode.isTransientFailure() = this == HttpStatusCode.TooManyRequests || value >= 500
 
     private companion object {
+        const val MAX_ATTEMPTS = 3
+        const val RETRY_DELAY_MILLIS = 1_000L
         const val USER_AGENT = "LyricTutor (https://github.com/LukeNeedham/LyricTutor)"
     }
 }
