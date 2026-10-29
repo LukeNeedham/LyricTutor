@@ -18,7 +18,8 @@ lyrics are fetched on demand and are never stored in the app's code or shared.
 
 ## Screenshots
 
-<img src="docs/screenshots/01-SettingsPage.png" width="240" alt="Settings Page">
+<img src="docs/screenshots/01-HomePage.png" width="240" alt="Home Page">
+<img src="docs/screenshots/02-SettingsPage.png" width="240" alt="Settings Page">
 
 ## Getting started as a user
 
