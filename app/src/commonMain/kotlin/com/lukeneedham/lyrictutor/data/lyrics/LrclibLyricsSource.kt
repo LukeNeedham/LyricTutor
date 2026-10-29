@@ -36,10 +36,22 @@ class LrclibLyricsSource(private val client: HttpClient) : LyricsSource {
 
     private suspend fun lookUp(track: TrackInfo): Lyrics? {
         val artistNames = listOf(track.artists.first(), track.artists.joinToString(", ")).distinct()
+        // A step that fails (LRCLIB answers 503 now and then) does not stop the next one; only when nothing was found is the failure reported,
+        // because "not found" after a failed step would be a lie
+        var failure: Exception? = null
         for (artist in artistNames) {
-            exactLookup(track, artist)?.let { return it }
-            search(track, artist)?.let { return it }
+            for (step in listOf(::exactLookup, ::search)) {
+                try {
+                    step(track, artist)?.let { return it }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Logger.w("LRCLIB lookup step failed for ${track.title}", e)
+                    failure = e
+                }
+            }
         }
+        failure?.let { throw it }
         return null
     }
 
