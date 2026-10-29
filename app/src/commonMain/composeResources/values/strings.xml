@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
+    <string name="home_title">LyricTutor</string>
+    <string name="home_subtitle">Paste a Spotify song link to learn from its lyrics.</string>
+    <string name="home_link_hint">https://open.spotify.com/track/…</string>
+    <string name="home_open_song">Open song</string>
+    <string name="home_invalid_link">That is not a Spotify song link.</string>
+    <string name="song_loading">Loading the song…</string>
+    <string name="song_cover_description">Album cover</string>
+    <string name="song_error_network">Could not reach Spotify. Check your connection.</string>
+    <string name="song_error_unreadable">Could not read this song from Spotify.</string>
+    <string name="song_retry">Try again</string>
 </resources>
