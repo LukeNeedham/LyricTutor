@@ -171,7 +171,7 @@ private fun Field(
 private fun Preview() {
     AppTheme {
         SettingsPageContent(
-            state = SettingsUiState(isDebugEnabled = true, apiKey = "AIzaSyExampleKey", model = "gemini-2.5-flash"),
+            state = SettingsUiState(isDebugEnabled = true, apiKey = "AIzaSyExampleKey", model = "gemini-3.8-flash"),
             onApiKeyChange = {},
             onModelChange = {},
             onSave = {},
