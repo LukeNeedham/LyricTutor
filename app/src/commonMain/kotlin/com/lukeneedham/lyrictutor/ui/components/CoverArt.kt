@@ -59,6 +59,6 @@ internal fun CoverArt(
 @Composable
 private fun Preview() {
     AppTheme {
-        CoverArt(trackId = "6GiCszfL4D2GlCU8tFU3sR", coverUrl = null, contentDescription = "", size = 96.dp, cornerRadius = 16.dp)
+        CoverArt(trackId = "6GiCszfL4D2GlCU8tFU3sR", coverUrl = null, contentDescription = "", size = 96.dp)
     }
 }
