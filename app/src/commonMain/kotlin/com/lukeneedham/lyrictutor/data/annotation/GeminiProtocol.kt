@@ -17,6 +17,8 @@ import kotlinx.serialization.json.putJsonObject
 
 /** The request and the response of Gemini's `generateContent`, as pure functions so that they are tested without a network. */
 object GeminiProtocol {
+    private const val MAX_OUTPUT_TOKENS = 16_384
+
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
 
     fun prompt(song: TrackInfo, lines: List<AnnotationLine>): String = buildString {
@@ -25,14 +27,16 @@ object GeminiProtocol {
         appendLine()
         appendLine("Rules:")
         appendLine("- Detect the language of each word yourself. Songs mix languages, so never assume one language for the whole song.")
-        appendLine("- Give every word of the line, in order, as written in the line (\"surface\"). Leave out nothing but punctuation.")
-        appendLine("- \"lemma\" is the dictionary form. \"partOfSpeech\" is a plain word like noun, verb or adjective.")
-        appendLine("- \"morphology\" says how the word is formed: for a verb, tense, mood, person and number; for a noun or adjective, gender and number. Use null when there is nothing to say.")
-        appendLine("- \"meaning\" is what the word means in this line, in a few English words.")
-        appendLine("- \"note\" explains slang, idioms and elisions (for example \"pa'\" is \"para\"). Use null when there is nothing to say.")
-        appendLine("- \"etymology\" is one short sentence on where the word comes from. If you are not sure, say \"unknown\". Never invent an etymology.")
-        appendLine("- \"cognates\" are English words with the same root, to help remember the word. Use an empty list when there are none.")
-        appendLine("- Keep every text short.")
+        appendLine("- Give every word of the line, in order, as written in the line (\"surface\"), one entry per word. Leave out nothing but punctuation. Never repeat a word's entry.")
+        appendLine("- Every text is very short. Never list alternatives, never repeat yourself, never write more than the limit below.")
+        appendLine("- \"translation\": the natural English meaning of the whole line.")
+        appendLine("- \"language\": the ISO 639-1 code, for example \"es\" or \"nl\".")
+        appendLine("- \"lemma\": the dictionary form, one word. \"partOfSpeech\": one word, like noun, verb, adjective, article or pronoun.")
+        appendLine("- \"morphology\": at most 8 words saying how this one word is formed, for example \"present indicative, 1st person singular\" for a verb or \"feminine plural\" for a noun. Use null when there is nothing to say.")
+        appendLine("- \"meaning\": at most 5 English words: what the word means in this line.")
+        appendLine("- \"note\": at most 15 words on slang, an idiom or an elision (for example \"pa'\" is \"para\"). Use null when there is nothing to say.")
+        appendLine("- \"etymology\": at most 15 words on where the word comes from. If you are not sure, say \"unknown\". Never invent an etymology.")
+        appendLine("- \"cognates\": at most 3 English words with the same root, to help remember the word. Use an empty list when there are none.")
         appendLine("- Answer for every line, with the same \"index\" as the line.")
         appendLine()
         appendLine("Lines:")
@@ -47,7 +51,9 @@ object GeminiProtocol {
         }
         putJsonObject("generationConfig") {
             put("responseMimeType", "application/json")
-            put("temperature", 0.2)
+            // No temperature: Gemini 3 is meant to run at its default, and a lower one made it loop on a word's fields
+            // A cap on the answer, so a runaway answer ends instead of taking minutes
+            put("maxOutputTokens", MAX_OUTPUT_TOKENS)
             put("responseSchema", responseSchema())
             // Gemini 3 models think before they answer, which makes a batch take minutes; the task needs little thinking
             if (model.startsWith("gemini-3")) {

@@ -112,6 +112,25 @@ class AnnotationRepositoryTest {
     }
 
     @Test
+    fun asksAgainForLinesTheAnswerLeftOutAndThenSaysSo() = runTest {
+        // Answers only the first line of each batch
+        val annotator = object : LyricsAnnotator {
+            override val providerName = "fake"
+            val asked = mutableListOf<List<Int>>()
+            override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
+                asked += lines.map { it.index }
+                return Result.success(listOf(LineAnnotation(lines.first().index, "t")))
+            }
+        }
+        val cache = FakeCache()
+        val result = AnnotationRepository(cache, annotator).annotate(track, lines(3)) {}
+
+        assertEquals(listOf(listOf(0, 1, 2), listOf(1, 2)), annotator.asked)
+        assertEquals(setOf(0, 1), cache.annotations.keys)
+        assertIs<AnnotationException.Failed>(result.exceptionOrNull())
+    }
+
+    @Test
     fun ignoresAnnotationsOfLinesThatWereNotAsked() = runTest {
         val annotator = object : LyricsAnnotator {
             override val providerName = "fake"
