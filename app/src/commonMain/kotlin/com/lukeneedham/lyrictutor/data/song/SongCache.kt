@@ -1,5 +1,6 @@
 package com.lukeneedham.lyrictutor.data.song
 
+import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.coroutines.flow.Flow
@@ -17,4 +18,9 @@ interface SongCache {
     suspend fun getLyrics(trackId: String): Lyrics?
 
     suspend fun saveLyrics(trackId: String, lyrics: Lyrics)
+
+    suspend fun getAnnotations(trackId: String): List<LineAnnotation>
+
+    /** Keeps [annotations] of the song, replacing those of the same lines. [provider] says where they came from. */
+    suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>)
 }

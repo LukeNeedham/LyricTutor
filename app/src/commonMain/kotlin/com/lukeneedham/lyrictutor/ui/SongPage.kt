@@ -8,7 +8,7 @@ import org.koin.core.parameter.parametersOf
 
 /** The page: connects to the ViewModel and the navigation, and delegates all UI. No preview. */
 @Composable
-fun SongPage(trackId: String) {
+fun SongPage(trackId: String, onOpenSettings: () -> Unit) {
     val viewModel = koinViewModel<SongViewModel>(key = trackId) { parametersOf(trackId) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     SongPageContent(
@@ -19,5 +19,9 @@ fun SongPage(trackId: String) {
         onPasteChange = viewModel::onPasteChange,
         onSavePaste = viewModel::onSavePaste,
         onClosePaste = viewModel::onClosePaste,
+        onRetryAnnotations = viewModel::onRetryAnnotations,
+        onOpenSettings = onOpenSettings,
+        onWordClick = viewModel::onWordClick,
+        onWordDismiss = viewModel::onWordDismiss,
     )
 }

@@ -22,4 +22,10 @@ interface SongDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLyrics(lyrics: LyricsEntity)
+
+    @Query("SELECT * FROM annotation WHERE trackId = :trackId")
+    suspend fun getAnnotations(trackId: String): List<AnnotationEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAnnotations(annotations: List<AnnotationEntity>)
 }

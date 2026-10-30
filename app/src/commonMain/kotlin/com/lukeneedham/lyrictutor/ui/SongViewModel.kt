@@ -2,11 +2,17 @@ package com.lukeneedham.lyrictutor.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
+import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
+import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.track.TrackResolveException
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryProtocol
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,10 +24,16 @@ class SongViewModel(
     private val trackResolver: TrackResolver,
     private val songCache: SongCache,
     private val lyricsRepository: LyricsRepository,
+    private val annotationRepository: AnnotationRepository,
+    private val wiktionaryLookup: WiktionaryLookup,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
     val uiState: StateFlow<SongUiState> = _uiState.asStateFlow()
+
+    private var annotationJob: Job? = null
+    private var wiktionaryJob: Job? = null
+    private val wiktionaryCache = mutableMapOf<String, WiktionaryUiState>()
 
     init {
         load()
@@ -33,6 +45,38 @@ class SongViewModel(
         val loaded = _uiState.value as? SongUiState.Loaded ?: return
         updateLoaded { it.copy(lyrics = LyricsUiState.Loading) }
         loadLyrics(loaded.track)
+    }
+
+    fun onRetryAnnotations() {
+        val loaded = _uiState.value as? SongUiState.Loaded ?: return
+        val lyrics = (loaded.lyrics as? LyricsUiState.Found)?.lyrics ?: return
+        annotate(loaded.track, lyrics)
+    }
+
+    fun onWordClick(selected: SelectedWord) {
+        val word = selected.word
+        wiktionaryJob?.cancel()
+        val key = "${word.language}|${word.surface.lowercase()}|${word.lemma}"
+        val known = wiktionaryCache[key]
+        updateLoaded { it.copy(selectedWord = selected, wiktionary = known ?: WiktionaryUiState.Loading) }
+        if (known != null) return
+        wiktionaryJob = viewModelScope.launch {
+            val state = wiktionaryLookup.find(word).fold(
+                onSuccess = { entry ->
+                    if (entry != null) WiktionaryUiState.Found(entry.title, entry.url)
+                    else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(word.surface))
+                },
+                onFailure = { WiktionaryUiState.Error },
+            )
+            // A failure is not kept, so that tapping the word again asks again
+            if (state !is WiktionaryUiState.Error) wiktionaryCache[key] = state
+            updateLoaded { if (it.selectedWord == selected) it.copy(wiktionary = state) else it }
+        }
+    }
+
+    fun onWordDismiss() {
+        wiktionaryJob?.cancel()
+        updateLoaded { it.copy(selectedWord = null) }
     }
 
     fun onOpenPaste() = updateLoaded { it.copy(pasteText = "") }
@@ -47,6 +91,7 @@ class SongViewModel(
         viewModelScope.launch {
             val lyrics = lyricsRepository.savePasted(loaded.track, text) ?: return@launch
             updateLoaded { it.copy(lyrics = LyricsUiState.Found(lyrics), pasteText = null) }
+            annotate(loaded.track, lyrics)
         }
     }
 
@@ -72,6 +117,30 @@ class SongViewModel(
                 onFailure = { LyricsUiState.Error },
             )
             updateLoaded { it.copy(lyrics = lyrics) }
+            if (lyrics is LyricsUiState.Found) annotate(track, lyrics.lyrics)
+        }
+    }
+
+    private fun annotate(track: TrackInfo, lyrics: Lyrics) {
+        annotationJob?.cancel()
+        updateLoaded { it.copy(annotationStatus = AnnotationStatus.Loading, annotationDetail = null) }
+        annotationJob = viewModelScope.launch {
+            val result = annotationRepository.annotate(track, lyrics.lines.map { it.text }) { batch ->
+                updateLoaded { it.copy(annotations = it.annotations + batch.associateBy { annotation -> annotation.index }) }
+            }
+            val status = result.fold(
+                onSuccess = { AnnotationStatus.Idle },
+                onFailure = {
+                    when (it) {
+                        is AnnotationException.MissingKey -> AnnotationStatus.MissingKey
+                        is AnnotationException.InvalidKey -> AnnotationStatus.InvalidKey
+                        is AnnotationException.RateLimited -> if (it.isDaily) AnnotationStatus.DailyLimit else AnnotationStatus.RateLimited
+                        else -> AnnotationStatus.Failed
+                    }
+                },
+            )
+            val detail = if (status == AnnotationStatus.Failed) result.exceptionOrNull()?.message else null
+            updateLoaded { it.copy(annotationStatus = status, annotationDetail = detail) }
         }
     }
 

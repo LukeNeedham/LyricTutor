@@ -10,5 +10,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun SettingsPage(onOpenDebug: () -> Unit) {
     val viewModel = koinViewModel<SettingsViewModel>()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    SettingsPageContent(state = state, onOpenDebug = onOpenDebug)
+    SettingsPageContent(
+        state = state,
+        onApiKeyChange = viewModel::onApiKeyChange,
+        onModelChange = viewModel::onModelChange,
+        onSave = viewModel::onSave,
+        onOpenDebug = onOpenDebug,
+    )
 }
