@@ -25,10 +25,23 @@ class HomeViewModel(songCache: SongCache) : ViewModel() {
         viewModelScope.launch {
             songCache.recents.collect { recents -> _uiState.update { it.copy(recents = recents) } }
         }
+        viewModelScope.launch {
+            songCache.languages.collect { languages ->
+                // A language no song has any more cannot stay selected
+                _uiState.update { state ->
+                    state.copy(songLanguages = languages, selectedLanguage = state.selectedLanguage?.takeIf { selected -> languages.values.any { selected in it } })
+                }
+            }
+        }
     }
 
     fun onInputChange(input: String) {
         _uiState.update { it.copy(input = input, showInvalidLink = false) }
+    }
+
+    /** Narrows the songs to [language]; the same language again shows them all. */
+    fun onLanguageClick(language: String) {
+        _uiState.update { it.copy(selectedLanguage = if (it.selectedLanguage == language) null else language) }
     }
 
     fun onSubmit() {
@@ -36,6 +49,8 @@ class HomeViewModel(songCache: SongCache) : ViewModel() {
         if (trackId == null) {
             _uiState.update { it.copy(showInvalidLink = true) }
         } else {
+            // The box is empty again when the user comes back to the page
+            _uiState.update { it.copy(input = "") }
             _events.trySend(HomeEvent.OpenSong(trackId))
         }
     }

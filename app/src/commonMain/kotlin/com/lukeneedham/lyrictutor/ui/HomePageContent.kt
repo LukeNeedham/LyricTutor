@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +46,7 @@ import com.lukeneedham.lyrictutor.generated.resources.home_how_3_body
 import com.lukeneedham.lyrictutor.generated.resources.home_how_3_title
 import com.lukeneedham.lyrictutor.generated.resources.home_how_title
 import com.lukeneedham.lyrictutor.generated.resources.home_invalid_link
+import com.lukeneedham.lyrictutor.generated.resources.home_languages_title
 import com.lukeneedham.lyrictutor.generated.resources.home_link_hint
 import com.lukeneedham.lyrictutor.generated.resources.home_open_song
 import com.lukeneedham.lyrictutor.generated.resources.home_recents_title
@@ -59,16 +62,19 @@ import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
 import com.lukeneedham.lyrictutor.ui.components.AppText
 import com.lukeneedham.lyrictutor.ui.components.AppTextField
 import com.lukeneedham.lyrictutor.ui.components.CoverArt
+import com.lukeneedham.lyrictutor.ui.components.LanguageTag
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** All of the page's UI. `internal`: the screenshots of the app use it too. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HomePageContent(
     state: HomeUiState,
     onInputChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    onLanguageClick: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSong: (trackId: String) -> Unit,
 ) {
@@ -90,6 +96,27 @@ internal fun HomePageContent(
             if (state.recents.isEmpty()) {
                 item { HowItWorks() }
             } else {
+                if (state.languages.isNotEmpty()) {
+                    item {
+                        AppText(
+                            text = stringResource(Res.string.home_languages_title),
+                            size = 20.sp,
+                            weight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 32.dp),
+                        )
+                    }
+                    item {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (language in state.languages) {
+                                LanguageTag(
+                                    language = language,
+                                    isSelected = language == state.selectedLanguage,
+                                    onClick = { onLanguageClick(language) },
+                                )
+                            }
+                        }
+                    }
+                }
                 item {
                     AppText(
                         text = stringResource(Res.string.home_recents_title),
@@ -98,7 +125,7 @@ internal fun HomePageContent(
                         modifier = Modifier.padding(top = 32.dp, bottom = 8.dp),
                     )
                 }
-                items(state.recents, key = { it.trackId }) { track ->
+                items(state.shownSongs, key = { it.trackId }) { track ->
                     RecentSongRow(track = track, onClick = { onOpenSong(track.trackId) })
                 }
             }
@@ -247,7 +274,7 @@ private fun Step(number: Int, title: String, body: String) {
 @Composable
 private fun Preview() {
     AppTheme {
-        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onOpenSettings = {}, onOpenSong = {})
+        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onLanguageClick = {}, onOpenSettings = {}, onOpenSong = {})
     }
 }
 
@@ -259,6 +286,7 @@ private fun PreviewInvalidLink() {
             state = HomeUiState(input = "not a link", showInvalidLink = true),
             onInputChange = {},
             onSubmit = {},
+            onLanguageClick = {},
             onOpenSettings = {},
             onOpenSong = {},
         )
@@ -285,6 +313,7 @@ private fun PreviewRecents() {
             ),
             onInputChange = {},
             onSubmit = {},
+            onLanguageClick = {},
             onOpenSettings = {},
             onOpenSong = {},
         )

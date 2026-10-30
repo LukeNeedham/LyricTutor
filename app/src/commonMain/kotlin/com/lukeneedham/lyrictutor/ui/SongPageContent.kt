@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
+import com.lukeneedham.lyrictutor.data.annotation.SongLanguages
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
@@ -165,6 +166,10 @@ internal fun SongPageContent(
 
                 is SongUiState.Loaded -> {
                     val lyricsFound = state.lyrics as? LyricsUiState.Found
+                    // The languages of the lyrics, most common first
+                    val languages = remember(lyricsFound, state.annotations) {
+                        lyricsFound?.let { SongLanguages.ranked(it.lyrics.lines, state.annotations) }.orEmpty()
+                    }
                     val hasNotice = lyricsFound != null && state.annotationStatus != AnnotationStatus.Idle
                     // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
                     val sheetHeight = if (state.selectedWord != null) pageHeightPx / 2 else 0
@@ -193,6 +198,8 @@ internal fun SongPageContent(
                         item {
                             SongHeader(
                                 track = state.track,
+                                languages = languages,
+                                showActions = state.isArtResolved,
                                 canTranslateAgain = state.annotationStatus == AnnotationStatus.Idle && state.annotations.isNotEmpty(),
                                 onPlay = { playOnSpotify(state.track.trackId) },
                                 onTranslateAgain = onTranslateAgain,
@@ -375,7 +382,7 @@ private fun Preview() {
         lines = listOf(LyricLine("Uno dos tres cuatro"), LyricLine("Cinco seis siete ocho")),
         source = LyricsSourceKind.Lrclib,
     )
-    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics)))
+    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics), isArtResolved = true))
 }
 
 @Preview
@@ -386,7 +393,7 @@ private fun PreviewAnnotated() {
         source = LyricsSourceKind.Lrclib,
     )
     val annotation = LineAnnotation(index = 0, translation = "One two three four", language = "Spanish")
-    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics), annotations = mapOf(0 to annotation)))
+    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics), annotations = mapOf(0 to annotation), isArtResolved = true))
 }
 
 @Preview
@@ -406,6 +413,7 @@ private fun PreviewWordSelected() {
     PreviewContent(
         SongUiState.Loaded(
             track = previewTrack,
+            isArtResolved = true,
             lyrics = LyricsUiState.Found(lyrics),
             annotations = mapOf(0 to annotation),
             selectedWord = SelectedWord(surface = "dos", language = "Spanish", lineIndex = 0, tokenIndex = 1),
@@ -417,13 +425,13 @@ private fun PreviewWordSelected() {
 @Preview
 @Composable
 private fun PreviewNotFound() {
-    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.NotFound))
+    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.NotFound, isArtResolved = true))
 }
 
 @Preview
 @Composable
 private fun PreviewPasting() {
-    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.NotFound, pasteText = ""))
+    PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.NotFound, pasteText = "", isArtResolved = true))
 }
 
 @Preview

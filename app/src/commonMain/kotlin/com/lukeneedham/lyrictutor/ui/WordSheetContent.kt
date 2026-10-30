@@ -163,12 +163,12 @@ private fun Sense(sense: WiktionarySense) {
         for ((index, gloss) in sense.glosses.withIndex()) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
-                    modifier = Modifier.padding(top = 1.dp).size(24.dp).clip(CircleShape).background(theme.surface),
+                    modifier = Modifier.size(24.dp).clip(CircleShape).background(theme.surface),
                     contentAlignment = Alignment.Center,
                 ) {
                     AppText(text = (index + 1).toString(), color = theme.onSurfaceVariant, size = 12.sp, weight = FontWeight.Bold)
                 }
-                AppText(text = gloss, color = theme.onSurface, size = 16.sp, modifier = Modifier.weight(1f))
+                AppText(text = gloss, color = theme.onSurface, size = 16.sp, lineHeight = 24.sp, modifier = Modifier.weight(1f))
             }
         }
     }

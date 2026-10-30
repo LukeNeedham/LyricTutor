@@ -24,6 +24,7 @@ data class AppThemeValues(
     val onPrimaryContainer: Color,
     /** The second colour of a song's page (from its album art); the app's own accent elsewhere. */
     val secondary: Color,
+    val onSecondary: Color,
     /** A soft tint of [secondary]: the selected word. */
     val secondaryContainer: Color,
     val onSecondaryContainer: Color,
@@ -50,6 +51,7 @@ internal val LightAppThemeValues = AppThemeValues(
     primaryContainer = Color(0xFFE4E0FF),
     onPrimaryContainer = Color(0xFF2A1F9E),
     secondary = Color(0xFFC13FA6),
+    onSecondary = Color.White,
     secondaryContainer = Color(0xFFF8DCF0),
     onSecondaryContainer = Color(0xFF5A1E4C),
     border = Color(0xFFDDDAE8),
@@ -73,6 +75,7 @@ internal val DarkAppThemeValues = AppThemeValues(
     primaryContainer = Color(0xFF3A2FA8),
     onPrimaryContainer = Color(0xFFE4E0FF),
     secondary = Color(0xFFE08BD0),
+    onSecondary = Color(0xFF111111),
     secondaryContainer = Color(0xFF5A2350),
     onSecondaryContainer = Color(0xFFFBD9F2),
     border = Color(0xFF34313F),

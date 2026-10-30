@@ -5,6 +5,8 @@ import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import com.lukeneedham.lyrictutor.data.annotation.SongLanguages
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
@@ -16,6 +18,18 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
     private val artistsSerializer = ListSerializer(String.serializer())
 
     override val recents: Flow<List<TrackInfo>> = dao.observeSongs().map { songs -> songs.map { it.toTrack() } }
+
+    override val languages: Flow<Map<String, List<String>>> =
+        combine(dao.observeLyrics(), dao.observeAnnotations()) { lyricsRows, annotationRows ->
+            val annotationsByTrack = annotationRows.groupBy { it.trackId }
+            lyricsRows.associate { row ->
+                val lyrics = json.decodeFromString(Lyrics.serializer(), row.json)
+                val annotations = annotationsByTrack[row.trackId].orEmpty()
+                    .map { json.decodeFromString(LineAnnotation.serializer(), it.json) }
+                    .associateBy { it.index }
+                row.trackId to SongLanguages.ranked(lyrics.lines, annotations)
+            }.filterValues { it.isNotEmpty() }
+        }
 
     override suspend fun getTrack(trackId: String): TrackInfo? = dao.getSong(trackId)?.toTrack()
 

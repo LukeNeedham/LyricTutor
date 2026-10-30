@@ -32,9 +32,14 @@ private fun HomePageScreenshot() {
                 releaseDate = "2004-01-01",
             ),
         ),
+        songLanguages = mapOf(
+            "6GiCszfL4D2GlCU8tFU3sR" to listOf("Spanish", "English"),
+            "0000000000000000000000" to listOf("Dutch"),
+        ),
+        selectedLanguage = "Spanish",
     )
     AppTheme {
-        HomePageContent(state = state, onInputChange = {}, onSubmit = {}, onOpenSettings = {}, onOpenSong = {})
+        HomePageContent(state = state, onInputChange = {}, onSubmit = {}, onLanguageClick = {}, onOpenSettings = {}, onOpenSong = {})
     }
 }
 
@@ -43,6 +48,6 @@ private fun HomePageScreenshot() {
 @Composable
 private fun HomePageEmptyScreenshot() {
     AppTheme {
-        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onOpenSettings = {}, onOpenSong = {})
+        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onLanguageClick = {}, onOpenSettings = {}, onOpenSong = {})
     }
 }

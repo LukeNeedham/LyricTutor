@@ -22,6 +22,7 @@ internal fun AppThemeValues.withArtColors(art: ArtColors): AppThemeValues {
         primaryContainer = primaryContainer,
         onPrimaryContainer = art.primary.ensureContrast(against = primaryContainer, minRatio = 4.5),
         secondary = secondary,
+        onSecondary = secondary.readableOn(),
         secondaryContainer = secondaryContainer,
         onSecondaryContainer = art.secondary.ensureContrast(against = secondaryContainer, minRatio = 4.5),
         gradientStart = art.primary,
