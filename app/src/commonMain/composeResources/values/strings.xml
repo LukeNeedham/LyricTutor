@@ -48,7 +48,7 @@
     <string name="settings_models_failed">Could not get the models. Check your connection.</string>
     <string name="song_play_on_spotify">Play on Spotify</string>
     <string name="song_translate_again">Translate again</string>
-    <string name="word_form_of">%1$s of %2$s</string>
+    <string name="word_meanings_of">Meanings of %1$s</string>
     <string name="word_no_senses">Wiktionary has a page for this word, but no meanings.</string>
     <string name="word_source_note">From Wiktionary, under the CC BY-SA license. Open the page.</string>
 </resources>

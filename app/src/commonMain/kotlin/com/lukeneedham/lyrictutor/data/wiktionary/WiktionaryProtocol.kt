@@ -27,12 +27,10 @@ object WiktionaryProtocol {
     @Serializable
     data class Definition(val definition: String = "")
 
-    /** A definition that says "<form> of <lemma>". */
-    data class FormOf(val formText: String, val lemma: String)
-
     private const val MAX_GLOSSES = 4
     private const val MAX_SENSES = 3
     private const val FORM_OF_MARKER = "form-of-definition-link"
+    private const val FORM_OF_CLASS = "form-of-definition"
     private val styleOrScript = Regex("<(style|script)[^>]*>.*?</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
     private val tag = Regex("<[^>]*>")
     private val spaces = Regex("\\s+")
@@ -69,35 +67,58 @@ object WiktionaryProtocol {
             .filter { it.isNotEmpty() }
             .distinct()
 
-    /** The senses of [entries]: a sense for each, with the meanings it has itself and, for a form of another word, how it is formed. */
+    /** What a definition of an entry is: a meaning, a "form of" another word, or a line that details a "form of" above it. */
+    private sealed interface Parsed {
+        val text: String
+
+        data class Meaning(override val text: String) : Parsed
+
+        data class FormOf(override val text: String, val lemma: String) : Parsed
+
+        data class Detail(override val text: String) : Parsed
+    }
+
+    private fun parse(html: String): Parsed? {
+        val marker = html.indexOf("class=\"$FORM_OF_MARKER\"")
+        if (marker >= 0) {
+            val lemma = firstLinkTitle.find(html, marker)?.groupValues?.get(1)
+            // An "inflection of <word>:" has the forms in a list inside it, which are again definitions of their own: cut them off
+            val text = toPlainText(html.substringBefore("<ol")).removeSuffix(":").trim()
+            if (lemma != null && text.isNotEmpty()) return Parsed.FormOf(text, lemma)
+        }
+        val text = toPlainText(html)
+        if (text.isEmpty()) return null
+        return if (marker < 0 && FORM_OF_CLASS in html) Parsed.Detail(text) else Parsed.Meaning(text)
+    }
+
+    /**
+     * The senses of [entries]: a sense for each. An entry with meanings of its own gives them in the order of the page, a "misspelling of
+     * x" among them like any other (it is not what the word is). An entry that is only a form of another word gives how it is formed,
+     * and the meanings of the other are added later.
+     */
     fun senses(entries: List<Entry>): List<WiktionarySense> =
         entries.take(MAX_SENSES).map { entry ->
-            val forms = entry.definitions.mapNotNull { formOf(it.definition) }
-            WiktionarySense(
-                partOfSpeech = entry.partOfSpeech,
-                formText = forms.map { it.formText }.filter { it.isNotEmpty() }.distinct().joinToString("; ").ifEmpty { null },
-                lemma = forms.firstOrNull()?.lemma,
-                glosses = glosses(entry),
-            )
+            val parsed = entry.definitions.mapNotNull { parse(it.definition) }
+            if (parsed.any { it is Parsed.Meaning }) {
+                WiktionarySense(
+                    partOfSpeech = entry.partOfSpeech,
+                    glosses = parsed.filter { it !is Parsed.Detail }.map { it.text }.take(MAX_GLOSSES),
+                )
+            } else {
+                val forms = parsed.filterIsInstance<Parsed.FormOf>()
+                WiktionarySense(
+                    partOfSpeech = entry.partOfSpeech,
+                    glosses = emptyList(),
+                    formOf = forms.firstOrNull()?.text,
+                    formDetails = (forms.drop(1) + parsed.filterIsInstance<Parsed.Detail>()).map { it.text }.distinct(),
+                    lemma = forms.firstOrNull()?.lemma,
+                )
+            }
         }
 
-    /** The meanings of an entry that are not "form of" another word: the first few, as plain text. */
+    /** The meanings of an entry, as plain text: the first few, not those that are a "form of" another word. */
     fun glosses(entry: Entry): List<String> =
-        entry.definitions
-            .filter { FORM_OF_MARKER !in it.definition }
-            .map { toPlainText(it.definition) }
-            .filter { it.isNotEmpty() }
-            .take(MAX_GLOSSES)
-
-    /** The "<form> of <lemma>" of a definition, or null for a definition that is a meaning. */
-    fun formOf(definitionHtml: String): FormOf? {
-        val marker = definitionHtml.indexOf("class=\"$FORM_OF_MARKER\"")
-        if (marker < 0) return null
-        val lemma = firstLinkTitle.find(definitionHtml, marker)?.groupValues?.get(1) ?: return null
-        // What stands before the link is "first-person singular present indicative of": the form, and "of"
-        val before = toPlainText(definitionHtml.substring(0, definitionHtml.lastIndexOf('<', marker)))
-        return FormOf(formText = before.removeSuffix("of").trim(), lemma = lemma)
-    }
+        entry.definitions.mapNotNull { parse(it.definition) }.filterIsInstance<Parsed.Meaning>().map { it.text }.take(MAX_GLOSSES)
 
     /** Takes the HTML of a definition to plain text: tags and style blocks gone, entities read, spaces collapsed. */
     fun toPlainText(html: String): String =

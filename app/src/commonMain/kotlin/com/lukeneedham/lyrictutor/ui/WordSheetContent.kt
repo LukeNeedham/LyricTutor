@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.sp
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryResult
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import com.lukeneedham.lyrictutor.generated.resources.Res
-import com.lukeneedham.lyrictutor.generated.resources.word_form_of
 import com.lukeneedham.lyrictutor.generated.resources.word_language
+import com.lukeneedham.lyrictutor.generated.resources.word_meanings_of
 import com.lukeneedham.lyrictutor.generated.resources.word_no_senses
 import com.lukeneedham.lyrictutor.generated.resources.word_source_note
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_error
@@ -96,7 +96,7 @@ private fun Found(result: WiktionaryResult) {
     }
 }
 
-/** A part of speech: for a form of another word how it is formed, then the first meanings. */
+/** A part of speech: for a word that is only a form of another, what the form is; then the meanings. */
 @Composable
 private fun Sense(sense: WiktionarySense) {
     val theme = AppTheme.current
@@ -106,10 +106,13 @@ private fun Sense(sense: WiktionarySense) {
             text = sense.partOfSpeech.lowercase(),
             style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 13.sp, lineHeight = 18.sp),
         )
-        if (sense.lemma != null) {
+        sense.formOf?.let { BasicText(text = it, style = textStyle.copy(fontWeight = FontWeight.Medium)) }
+        for (detail in sense.formDetails) BasicText(text = "• $detail", style = textStyle)
+        if (sense.lemma != null && sense.glosses.isNotEmpty()) {
             BasicText(
-                text = if (sense.formText != null) stringResource(Res.string.word_form_of, sense.formText, sense.lemma) else sense.lemma,
-                style = textStyle.copy(fontWeight = FontWeight.Medium),
+                text = stringResource(Res.string.word_meanings_of, sense.lemma),
+                modifier = Modifier.padding(top = 4.dp),
+                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 13.sp, lineHeight = 18.sp),
             )
         }
         for (gloss in sense.glosses) BasicText(text = "• $gloss", style = textStyle)
@@ -153,7 +156,7 @@ private fun Preview() {
                     senses = listOf(
                         WiktionarySense(
                             partOfSpeech = "Verb",
-                            formText = "first-person singular present indicative",
+                            formOf = "first-person singular present indicative of ir",
                             lemma = "ir",
                             glosses = listOf("to go", "to come"),
                         ),

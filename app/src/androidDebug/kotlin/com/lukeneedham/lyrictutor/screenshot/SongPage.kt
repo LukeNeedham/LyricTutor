@@ -46,7 +46,7 @@ private fun SongPageScreenshot() {
         title = "dos",
         language = "Spanish",
         url = "https://en.wiktionary.org/wiki/dos#Spanish",
-        senses = listOf(WiktionarySense(partOfSpeech = "Numeral", formText = null, lemma = null, glosses = listOf("two"))),
+        senses = listOf(WiktionarySense(partOfSpeech = "Numeral", glosses = listOf("two"))),
     )
     val state = SongUiState.Loaded(
         track = track,

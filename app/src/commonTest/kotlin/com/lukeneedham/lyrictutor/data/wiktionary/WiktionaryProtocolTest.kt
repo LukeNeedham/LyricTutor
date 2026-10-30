@@ -57,8 +57,9 @@ class WiktionaryProtocolTest {
         val spanish = WiktionaryProtocol.entriesFor(WiktionaryProtocol.parseEntries(voy), "Spanish")
         val sense = WiktionaryProtocol.senses(spanish).single()
         assertEquals("Verb", sense.partOfSpeech)
-        assertEquals("first-person singular present indicative", sense.formText)
+        assertEquals("first-person singular present indicative of ir", sense.formOf)
         assertEquals("ir", sense.lemma)
+        assertTrue(sense.formDetails.isEmpty())
         assertTrue(sense.glosses.isEmpty())
     }
 
@@ -66,7 +67,7 @@ class WiktionaryProtocolTest {
     fun readsAnElidedWordAsAFormOfTheFullWord() {
         val spanish = WiktionaryProtocol.entriesFor(WiktionaryProtocol.parseEntries(pa), "Spanish")
         val sense = WiktionaryProtocol.senses(spanish).single()
-        assertEquals("apocopic form", sense.formText)
+        assertEquals("apocopic form of para", sense.formOf)
         assertEquals("para", sense.lemma)
     }
 
@@ -76,12 +77,58 @@ class WiktionaryProtocolTest {
         val senses = WiktionaryProtocol.senses(dutch)
         assertEquals(listOf("Adjective", "Adverb"), senses.map { it.partOfSpeech })
         assertNull(senses[0].lemma)
-        assertNull(senses[0].formText)
+        assertNull(senses[0].formOf)
         assertEquals(
             listOf("regular, ordinary, usual", "normal, common", "wont, having a certain habit [with om ‘to’]"),
             senses[0].glosses,
         )
         assertEquals(listOf("simply, just"), senses[1].glosses)
+    }
+
+    // The Dutch entries of "jou" as the endpoint answers: a pronoun with a meaning and a misspelling, and a verb that is only a form
+    private val jou = """
+        {"nl":[{"partOfSpeech":"Pronoun","language":"Dutch","definitions":[
+        {"definition":"<a href=\"/wiki/you\" title=\"you\">you</a>; <span class=\"use-with-mention\">second-person singular objective personal pronoun</span>","examples":["Ik zal dit wel even doen voor <b>jou</b>."]},
+        {"definition":"<span class=\"form-of-definition use-with-mention\">misspelling of <span class=\"form-of-definition-link\"><i class=\"Latn mention\" lang=\"nl\"><a href=\"/wiki/jouw#Dutch\" title=\"jouw\">jouw</a></i> <span class=\"mention-gloss-paren annotation-paren\">(</span><span class=\"mention-gloss-double-quote\">“</span><span class=\"mention-gloss\">your</span><span class=\"mention-gloss-double-quote\">”</span><span class=\"mention-gloss-paren annotation-paren\">)</span></span></span><link rel=\"mw:PageProp/Category\" href=\"./Category:Dutch_misspellings#JOU\">"}]},
+        {"partOfSpeech":"Verb","language":"Dutch","definitions":[
+        {"definition":"<span class=\"form-of-definition use-with-mention\">inflection of <span class=\"form-of-definition-link\"><i class=\"Latn mention\" lang=\"nl\"><a href=\"/wiki/jouen#Dutch\" title=\"jouen\">jouen</a></i></span>:</span><span>\n</span><ol><li><span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#first_person\" title=\"Appendix:Glossary\">first-person</a> <a href=\"/wiki/Appendix:Glossary#singular_number\" title=\"Appendix:Glossary\">singular</a> <a href=\"/wiki/Appendix:Glossary#present_tense\" title=\"Appendix:Glossary\">present</a> <a href=\"/wiki/Appendix:Glossary#indicative_mood\" title=\"Appendix:Glossary\">indicative</a></span></li><li><span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#imperative_mood\" title=\"Appendix:Glossary\">imperative</a></span></li></ol>"},
+        {"definition":"<span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#first_person\" title=\"Appendix:Glossary\">first-person</a> <a href=\"/wiki/Appendix:Glossary#singular_number\" title=\"Appendix:Glossary\">singular</a> <a href=\"/wiki/Appendix:Glossary#present_tense\" title=\"Appendix:Glossary\">present</a> <a href=\"/wiki/Appendix:Glossary#indicative_mood\" title=\"Appendix:Glossary\">indicative</a></span>"},
+        {"definition":"<span class=\"form-of-definition use-with-mention\">(in case of <a href=\"/wiki/Appendix:Glossary#inversion\" title=\"Appendix:Glossary\">inversion</a>) <a href=\"/wiki/Appendix:Glossary#second_person\" title=\"Appendix:Glossary\">second-person</a> <a href=\"/wiki/Appendix:Glossary#singular_number\" title=\"Appendix:Glossary\">singular</a> <a href=\"/wiki/Appendix:Glossary#present_tense\" title=\"Appendix:Glossary\">present</a> <a href=\"/wiki/Appendix:Glossary#indicative_mood\" title=\"Appendix:Glossary\">indicative</a></span>"},
+        {"definition":"<span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#imperative_mood\" title=\"Appendix:Glossary\">imperative</a></span>"}]}]}
+    """.trimIndent().replace("\n", "")
+
+    @Test
+    fun anEntryWithAMeaningAndAMisspellingKeepsTheOrderOfThePage() {
+        val pronoun = WiktionaryProtocol.senses(WiktionaryProtocol.parseEntries(jou)).first { it.partOfSpeech == "Pronoun" }
+        // The misspelling is not what the word is: it is a line among the meanings, not the headline
+        assertNull(pronoun.formOf)
+        assertNull(pronoun.lemma)
+        assertEquals(
+            listOf("you; second-person singular objective personal pronoun", "misspelling of jouw (“your”)"),
+            pronoun.glosses,
+        )
+    }
+
+    @Test
+    fun aWordThatIsOnlyAnInflectionGivesItsFormsUnderTheHeadline() {
+        val verb = WiktionaryProtocol.senses(WiktionaryProtocol.parseEntries(jou)).first { it.partOfSpeech == "Verb" }
+        assertEquals("inflection of jouen", verb.formOf)
+        assertEquals("jouen", verb.lemma)
+        assertEquals(
+            listOf(
+                "first-person singular present indicative",
+                "(in case of inversion) second-person singular present indicative",
+                "imperative",
+            ),
+            verb.formDetails,
+        )
+        assertTrue(verb.glosses.isEmpty())
+    }
+
+    @Test
+    fun theMeaningsOfADictionaryFormLeaveOutItsFormsOfOtherWords() {
+        val entry = WiktionaryProtocol.parseEntries(jou).first { it.partOfSpeech == "Pronoun" }
+        assertEquals(listOf("you; second-person singular objective personal pronoun"), WiktionaryProtocol.glosses(entry))
     }
 
     @Test

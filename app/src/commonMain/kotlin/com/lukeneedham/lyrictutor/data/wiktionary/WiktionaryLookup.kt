@@ -4,15 +4,17 @@ package com.lukeneedham.lyrictutor.data.wiktionary
 data class WiktionarySense(
     /** For example "Verb" or "Adjective". */
     val partOfSpeech: String,
-    /**
-     * For a word that is an inflected or variant form of another, how it is formed, for example
-     * "first-person singular present indicative"; null for a word that is a dictionary form itself.
-     */
-    val formText: String?,
-    /** The dictionary form that [formText] is a form of, for example "ir". */
-    val lemma: String?,
-    /** The first meanings: those of the word itself, or of its [lemma] for a form. */
+    /** The meanings, in the order of the page: those of the word itself, or, for a word that is only a form, those of its [lemma]. */
     val glosses: List<String>,
+    /**
+     * For a word that is only a form of another word (it has no meaning of its own), what the page says of it, for example
+     * "first-person singular present indicative of ir" or "inflection of jouen". Null for a word with meanings of its own.
+     */
+    val formOf: String? = null,
+    /** The lines under [formOf] that say which forms it is, for example "imperative". */
+    val formDetails: List<String> = emptyList(),
+    /** The dictionary form that the word is a form of, for example "ir". */
+    val lemma: String? = null,
 )
 
 /** What Wiktionary says about a word in a language. */
