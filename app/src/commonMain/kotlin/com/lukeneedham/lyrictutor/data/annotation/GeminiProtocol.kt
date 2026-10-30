@@ -28,11 +28,12 @@ object GeminiProtocol {
         appendLine("Rules:")
         appendLine("- Detect the language of each word yourself. Songs mix languages, so never assume one language for the whole song.")
         appendLine("- Give every word of the line, in order, as written in the line (\"surface\"), one entry per word. Leave out nothing but punctuation. Never repeat a word's entry.")
+        appendLine("- Always fill \"language\", \"lemma\", \"partOfSpeech\" and \"meaning\" of every word, also for little words like \"het\", \"en\" or \"me\".")
         appendLine("- Every text is very short. Never list alternatives, never repeat yourself, never write more than the limit below.")
         appendLine("- \"translation\": the natural English meaning of the whole line.")
         appendLine("- \"language\": the English name of the language of this word, for example \"Spanish\" or \"Dutch\".")
         appendLine("- \"lemma\": the dictionary form, one word. \"partOfSpeech\": one word, like noun, verb, adjective, article or pronoun.")
-        appendLine("- \"morphology\": at most 8 words saying how this one word is formed, for example \"present indicative, 1st person singular\" for a verb or \"feminine plural\" for a noun. Use null when there is nothing to say.")
+        appendLine("- \"morphology\": at most 8 words saying how this one word is formed, for example \"present indicative, 1st person singular\" for a verb or \"feminine plural\" for a noun. Use null only for a word that is never inflected, like an adverb or a preposition.")
         appendLine("- \"meaning\": at most 5 English words: what the word means in this line.")
         appendLine("- \"note\": at most 15 words on slang, an idiom or an elision (for example \"pa'\" is \"para\"). Use null when there is nothing to say.")
         appendLine("- \"cognates\": at most 3 English words with the same root, to help remember the word. Use an empty list when there are none, and give only cognates you are sure of.")
@@ -80,18 +81,24 @@ object GeminiProtocol {
             put("type", "OBJECT")
             putJsonObject("properties") {
                 put("surface", string())
-                put("language", string(nullable = true))
-                put("lemma", string(nullable = true))
-                put("partOfSpeech", string(nullable = true))
+                put("language", string())
+                put("lemma", string())
+                put("partOfSpeech", string())
                 put("morphology", string(nullable = true))
-                put("meaning", string(nullable = true))
+                put("meaning", string())
                 put("note", string(nullable = true))
                 putJsonObject("cognates") {
                     put("type", "ARRAY")
                     put("items", string())
                 }
             }
-            put("required", buildJsonArray { add(JsonPrimitive("surface")) })
+            // Everything but the note is required: left optional, a smaller model leaves most of it out
+            put(
+                "required",
+                buildJsonArray {
+                    listOf("surface", "language", "lemma", "partOfSpeech", "morphology", "meaning", "cognates").forEach { add(JsonPrimitive(it)) }
+                },
+            )
         }
         val line = buildJsonObject {
             put("type", "OBJECT")

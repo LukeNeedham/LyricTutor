@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 
+/** An annotation with everything the sheet of a word needs. */
+private fun complete(index: Int, translation: String) =
+    LineAnnotation(index, translation, listOf(WordAnnotation(surface = "w", lemma = "w", meaning = "m")))
+
 class AnnotationRepositoryTest {
 
     private val track = TrackInfo(
@@ -43,7 +47,7 @@ class AnnotationRepositoryTest {
         override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
             batches += lines.map { it.index }
             failures.removeFirstOrNull()?.let { return Result.failure(it) }
-            return Result.success(lines.map { LineAnnotation(index = it.index, translation = "t${it.index}") })
+            return Result.success(lines.map { complete(it.index, "t${it.index}") })
         }
     }
 
@@ -65,7 +69,7 @@ class AnnotationRepositoryTest {
 
     @Test
     fun doesNotAskAgainForKeptLines() = runTest {
-        val cache = FakeCache(mutableMapOf(0 to LineAnnotation(0, "kept"), 1 to LineAnnotation(1, "kept")))
+        val cache = FakeCache(mutableMapOf(0 to complete(0, "kept"), 1 to complete(1, "kept")))
         val annotator = FakeAnnotator()
         val delivered = mutableListOf<LineAnnotation>()
 
@@ -93,7 +97,7 @@ class AnnotationRepositoryTest {
 
     @Test
     fun givesAKeptAnnotationToLinesThatRepeatItAndAreNew() = runTest {
-        val cache = FakeCache(mutableMapOf(0 to LineAnnotation(0, "kept")))
+        val cache = FakeCache(mutableMapOf(0 to complete(0, "kept")))
         val annotator = FakeAnnotator()
         val delivered = mutableListOf<LineAnnotation>()
 
@@ -148,7 +152,7 @@ class AnnotationRepositoryTest {
             val asked = mutableListOf<List<Int>>()
             override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
                 asked += lines.map { it.index }
-                return Result.success(listOf(LineAnnotation(lines.first().index, "t")))
+                return Result.success(listOf(complete(lines.first().index, "t")))
             }
         }
         val cache = FakeCache()
@@ -160,11 +164,42 @@ class AnnotationRepositoryTest {
     }
 
     @Test
+    fun asksAgainWhenAWordHasNoMeaningAndShowsTheBestWithoutKeepingIt() = runTest {
+        val answers = mutableListOf<List<Int>>()
+        // Always answers the line, but with a word that has a lemma and no meaning
+        val annotator = object : LyricsAnnotator {
+            override val providerName = "fake"
+            override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
+                answers += lines.map { it.index }
+                return Result.success(lines.map { LineAnnotation(it.index, "t", listOf(WordAnnotation(surface = "w", lemma = "w"))) })
+            }
+        }
+        val cache = FakeCache()
+        val delivered = mutableListOf<LineAnnotation>()
+        val result = AnnotationRepository(cache, annotator).annotate(track, lines(1)) { delivered += it }
+
+        assertEquals(listOf(listOf(0), listOf(0)), answers)
+        assertEquals(1, delivered.size)
+        assertTrue(cache.annotations.isEmpty())
+        assertIs<AnnotationException.Failed>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun asksAgainForKeptAnnotationsThatAreNotComplete() = runTest {
+        val cache = FakeCache(mutableMapOf(0 to LineAnnotation(0, "kept", listOf(WordAnnotation(surface = "w")))))
+        val annotator = FakeAnnotator()
+        AnnotationRepository(cache, annotator).annotate(track, lines(1)) {}
+
+        assertEquals(listOf(listOf(0)), annotator.batches)
+        assertEquals("t0", cache.annotations.getValue(0).translation)
+    }
+
+    @Test
     fun ignoresAnnotationsOfLinesThatWereNotAsked() = runTest {
         val annotator = object : LyricsAnnotator {
             override val providerName = "fake"
             override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>) =
-                Result.success(listOf(LineAnnotation(0, "asked"), LineAnnotation(99, "stray")))
+                Result.success(listOf(complete(0, "asked"), complete(99, "stray")))
         }
         val cache = FakeCache()
         AnnotationRepository(cache, annotator).annotate(track, lines(1)) {}
