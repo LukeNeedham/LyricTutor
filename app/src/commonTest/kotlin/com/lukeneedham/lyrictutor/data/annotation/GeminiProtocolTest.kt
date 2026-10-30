@@ -36,6 +36,14 @@ class GeminiProtocolTest {
         assertTrue("0: hola" in body)
     }
 
+    @Test
+    fun gemini3ModelsAreAskedToThinkLittle() {
+        val gemini3 = GeminiProtocol.requestBody(track, listOf(AnnotationLine(0, "hola")), model = "gemini-3.8-flash").toString()
+        val older = GeminiProtocol.requestBody(track, listOf(AnnotationLine(0, "hola")), model = "gemini-2.5-flash").toString()
+        assertTrue("\"thinkingLevel\":\"low\"" in gemini3)
+        assertTrue("thinkingLevel" !in older)
+    }
+
     // The text of the first candidate holds the JSON that the schema asked for
     private val answer = """
         {"candidates":[{"content":{"parts":[{"text":"{\"lines\":[{\"index\":0,\"translation\":\"If I go\",\"words\":[

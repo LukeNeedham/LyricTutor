@@ -6,7 +6,7 @@ import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.coroutines.delay
 
 /**
- * Annotates the lines of a song a few at a time (the free tier limits requests), keeping every batch on the device so that a line
+ * Annotates the lines of a song a few at a time (a small batch answers sooner, so the first lines show quickly), keeping every batch on the device so that a line
  * is never paid for twice. A failed batch is tried once more, then the rest is left for a later try.
  */
 class AnnotationRepository(
@@ -47,7 +47,7 @@ class AnnotationRepository(
     }
 
     companion object {
-        const val BATCH_SIZE = 15
+        const val BATCH_SIZE = 6
         private const val RETRY_DELAY_MILLIS = 2_000L
     }
 }

@@ -39,7 +39,7 @@ object GeminiProtocol {
         lines.forEach { appendLine("${it.index}: ${it.text}") }
     }
 
-    fun requestBody(song: TrackInfo, lines: List<AnnotationLine>): JsonObject = buildJsonObject {
+    fun requestBody(song: TrackInfo, lines: List<AnnotationLine>, model: String = ""): JsonObject = buildJsonObject {
         putJsonArray("contents") {
             addJsonObject {
                 putJsonArray("parts") { addJsonObject { put("text", prompt(song, lines)) } }
@@ -49,6 +49,10 @@ object GeminiProtocol {
             put("responseMimeType", "application/json")
             put("temperature", 0.2)
             put("responseSchema", responseSchema())
+            // Gemini 3 models think before they answer, which makes a batch take minutes; the task needs little thinking
+            if (model.startsWith("gemini-3")) {
+                putJsonObject("thinkingConfig") { put("thinkingLevel", "low") }
+            }
         }
         // Lyrics can be crude, and a blocked answer helps nobody
         putJsonArray("safetySettings") {

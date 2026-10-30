@@ -40,7 +40,7 @@ import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.annotation_failed
 import com.lukeneedham.lyrictutor.generated.resources.annotation_invalid_key
-import com.lukeneedham.lyrictutor.generated.resources.annotation_loading
+import com.lukeneedham.lyrictutor.generated.resources.annotation_progress
 import com.lukeneedham.lyrictutor.generated.resources.annotation_missing_key
 import com.lukeneedham.lyrictutor.generated.resources.annotation_open_settings
 import com.lukeneedham.lyrictutor.generated.resources.annotation_rate_limited
@@ -116,6 +116,8 @@ internal fun SongPageContent(
                             AnnotationNotice(
                                 status = state.annotationStatus,
                                 detail = state.annotationDetail,
+                                doneLines = state.annotations.size,
+                                totalLines = lyrics.lyrics.lines.size,
                                 onRetry = onRetryAnnotations,
                                 onOpenSettings = onOpenSettings,
                             )
@@ -212,10 +214,17 @@ private fun LyricLineRow(line: LyricLine, annotation: LineAnnotation?, onWordCli
 private fun String.normalizedWord(): String = lowercase().filter { it.isLetterOrDigit() }
 
 @Composable
-private fun AnnotationNotice(status: AnnotationStatus, detail: String?, onRetry: () -> Unit, onOpenSettings: () -> Unit) {
+private fun AnnotationNotice(
+    status: AnnotationStatus,
+    detail: String?,
+    doneLines: Int,
+    totalLines: Int,
+    onRetry: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     val message = when (status) {
         AnnotationStatus.Idle -> return
-        AnnotationStatus.Loading -> stringResource(Res.string.annotation_loading)
+        AnnotationStatus.Loading -> stringResource(Res.string.annotation_progress, doneLines, totalLines)
         AnnotationStatus.MissingKey -> stringResource(Res.string.annotation_missing_key)
         AnnotationStatus.InvalidKey -> stringResource(Res.string.annotation_invalid_key)
         AnnotationStatus.RateLimited -> stringResource(Res.string.annotation_rate_limited)
