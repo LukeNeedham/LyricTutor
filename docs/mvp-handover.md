@@ -131,7 +131,12 @@ the title, then the actions, so nothing moves between pages) and a list that scr
 Pages slide (new page in from the right, old out to the left; reversed on back) through `transitionSpec` and `popTransitionSpec` of the `NavDisplay`.
 The song page is painted with its cover: `ArtColorExtractor` (Coil in `androidMain`) hands the pixels to `DominantColors` (pure Kotlin, tested),
 which gives the most prominent colour as primary and the most prominent colour at least 100 apart (RGB) as secondary; `withArtColors` makes
-them readable against the page. The word sheet has no close button: its handle closes it, and its header has the Wiktionary link as an icon.
+them readable against the page. Greys, blacks and whites are skipped for both colours while the image has any real colour (25% saturation and
+brightness minimum). The tapped word is drawn in the primary colour.
+The word sheet is the standard `ModalBottomSheet`: **the one use of Material 3 in the app** (a deliberate exception to "no Material", added for
+this sheet only; colours and shape still come from `AppTheme`). It has no close button, its handle closes it, its header has the Wiktionary link
+as an icon, and the Wiktionary credit is on Settings (Credits). The song page has no Settings icon; when the cover and title scroll out of
+sight they move into the middle of the toolbar (`SongToolbarTitle`, the `center` slot of `AppToolbar`), and tapping them scrolls to the top.
 **Not verified on a device**: the colours of real covers, and the slide and edge-to-edge behaviour; CI builds and renders previews.
 
 ## 5. How to build on the skeleton
