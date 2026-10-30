@@ -20,10 +20,11 @@ import org.koin.dsl.module
 val appModule = module {
     single {
         HttpClient {
-            // The default of the OkHttp engine is ten seconds, too short for Gemini; its call sets its own limit
+            // The default of the OkHttp engine is ten seconds for each of these, too short for Gemini; its call sets its own limits
             install(HttpTimeout) {
                 requestTimeoutMillis = 30_000
                 connectTimeoutMillis = 15_000
+                socketTimeoutMillis = 30_000
             }
         }
     }

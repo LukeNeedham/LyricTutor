@@ -33,7 +33,11 @@ class GeminiAnnotator(
             val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent") {
                 header("x-goog-api-key", settings.apiKey)
                 contentType(ContentType.Application.Json)
-                timeout { requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS }
+                timeout {
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS
+                    // The wait for the first byte of the answer: the default of the OkHttp engine is ten seconds, too short for a batch
+                    socketTimeoutMillis = REQUEST_TIMEOUT_MILLIS
+                }
                 setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.requestBody(song, lines)))
             }
             val text = response.bodyAsText()
