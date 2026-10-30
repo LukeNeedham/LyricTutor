@@ -1,6 +1,7 @@
 package com.lukeneedham.lyrictutor.ui
 
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
+import com.lukeneedham.lyrictutor.data.art.ArtColors
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 
 sealed interface SongUiState {
@@ -9,6 +10,8 @@ sealed interface SongUiState {
     data class Loaded(
         val track: TrackInfo,
         val lyrics: LyricsUiState,
+        /** The two colours of the cover, once read: the song's page is painted with them. */
+        val artColors: ArtColors? = null,
         /** The text in the paste box, or null when the box is closed. */
         val pasteText: String? = null,
         /** The translation and words of each line that has them, by the index of the line. */

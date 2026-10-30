@@ -21,9 +21,13 @@ fun Router(backStack: NavBackStack<NavKey>, route: Route) {
             onOpenSettings = { navigateTo(Route.Settings) },
         )
 
-        is Route.Song -> SongPage(trackId = route.trackId, onOpenSettings = { navigateTo(Route.Settings) })
+        is Route.Song -> SongPage(
+            trackId = route.trackId,
+            onBack = ::onBack,
+            onOpenSettings = { navigateTo(Route.Settings) },
+        )
 
-        Route.Settings -> SettingsPage(onOpenDebug = { navigateTo(Route.Debug) })
+        Route.Settings -> SettingsPage(onBack = ::onBack, onOpenDebug = { navigateTo(Route.Debug) })
 
         Route.Debug -> DebugPage(
             onBack = ::onBack,

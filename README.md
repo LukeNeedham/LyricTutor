@@ -19,8 +19,10 @@ lyrics are fetched on demand and are never stored in the app's code or shared.
 ## Screenshots
 
 <img src="docs/screenshots/01-HomePage.png" width="240" alt="Home Page">
-<img src="docs/screenshots/02-SongPage.png" width="240" alt="Song Page">
-<img src="docs/screenshots/03-SettingsPage.png" width="240" alt="Settings Page">
+<img src="docs/screenshots/02-HomePageEmpty.png" width="240" alt="Home Page Empty">
+<img src="docs/screenshots/03-SongPage.png" width="240" alt="Song Page">
+<img src="docs/screenshots/04-SongPageTranslating.png" width="240" alt="Song Page Translating">
+<img src="docs/screenshots/05-SettingsPage.png" width="240" alt="Settings Page">
 
 ## Getting started as a user
 

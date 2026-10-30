@@ -117,6 +117,28 @@ them here). The ones that matter most when adding features:
 - The stop hook's warnings about "unpushed" or "Unverified" commits by `github-actions[bot]` are CI's own commits: run `git fetch origin`
   and do nothing else. Never amend, rebase or force-push over them.
 
+### 3b. The look of the app (UI redesign)
+
+The proof-of-concept screens were redesigned (data flows untouched). The shared pieces are in `ui/components/`: `AppText` (the one way to
+draw text), `AppIcon` / `AppIconImage` (icons drawn by hand on a 24 grid, since there is no icon library), `AppIconButton`, `AppButton`
+(`Primary`, `Tonal`, `Plain`), `AppTextField`, `CoverArt` (a gradient of the song's own colour under the cover, so a song without a cover
+still looks right) and `Spinner`. `AppThemeValues` gained `surfaceVariant`, `onSurfaceVariant`, `primaryContainer`, `onPrimaryContainer`,
+`border` and the two `gradient*` colours; `outline` stays because the library's `DebugTheme` is mapped from it. Home has a gradient hero
+with the link field and, until a first song is opened, a "How it works" card. The song page has a header (cover, title, actions), stacked
+lyric lines with a pulsing placeholder for translations still on their way, and a status card with a progress bar. Settings is two cards.
+The app is edge to edge (`enableEdgeToEdge()`): every page is a `Column` of the common `AppToolbar` (64dp under the status bar; back first, then
+the title, then the actions, so nothing moves between pages) and a list that scrolls under the navigation bar (`navigationBarHeight()`).
+Pages slide (new page in from the right, old out to the left; reversed on back) through `transitionSpec` and `popTransitionSpec` of the `NavDisplay`.
+The song page is painted with its cover: `ArtColorExtractor` (Coil in `androidMain`) hands the pixels to `DominantColors` (pure Kotlin, tested),
+which gives the most prominent colour as primary and the most prominent colour at least 100 apart (RGB) as secondary; `withArtColors` makes
+them readable against the page. Greys, blacks and whites are skipped for both colours while the image has any real colour (25% saturation and
+brightness minimum). The tapped word is drawn in the primary colour.
+The word sheet is the standard `ModalBottomSheet`: **the one use of Material 3 in the app** (a deliberate exception to "no Material", added for
+this sheet only; colours and shape still come from `AppTheme`). It has no close button, its handle closes it, its header has the Wiktionary link
+as an icon, and the Wiktionary credit is on Settings (Credits). The song page has no Settings icon; when the cover and title scroll out of
+sight they move into the middle of the toolbar (`SongToolbarTitle`, the `center` slot of `AppToolbar`), and tapping them scrolls to the top.
+**Not verified on a device**: the colours of real covers, and the slide and edge-to-edge behaviour; CI builds and renders previews.
+
 ## 5. How to build on the skeleton
 
 Concrete shapes that fit the rules, for the features below:

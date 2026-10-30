@@ -23,6 +23,8 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
+            // Only for ModalBottomSheet, the standard bottom sheet. Nothing else of Material is used, and the theme is AppTheme
+            implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)

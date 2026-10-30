@@ -1,87 +1,86 @@
 package com.lukeneedham.lyrictutor.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
+import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
-import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryResult
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import com.lukeneedham.lyrictutor.generated.resources.Res
-import com.lukeneedham.lyrictutor.generated.resources.annotation_daily_limit
-import com.lukeneedham.lyrictutor.generated.resources.annotation_failed
-import com.lukeneedham.lyrictutor.generated.resources.annotation_invalid_key
-import com.lukeneedham.lyrictutor.generated.resources.annotation_progress
-import com.lukeneedham.lyrictutor.generated.resources.annotation_missing_key
-import com.lukeneedham.lyrictutor.generated.resources.annotation_open_settings
-import com.lukeneedham.lyrictutor.generated.resources.annotation_rate_limited
-import com.lukeneedham.lyrictutor.generated.resources.annotation_retry
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_error
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_loading
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_not_found
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_paste
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_paste_cancel
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_paste_hint
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_paste_save
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_pasted_note
-import com.lukeneedham.lyrictutor.generated.resources.lyrics_retry
-import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import com.lukeneedham.lyrictutor.generated.resources.song_error_network
 import com.lukeneedham.lyrictutor.generated.resources.song_error_unreadable
+import com.lukeneedham.lyrictutor.generated.resources.song_lyrics_hint
+import com.lukeneedham.lyrictutor.generated.resources.song_lyrics_title
 import com.lukeneedham.lyrictutor.generated.resources.song_loading
-import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
 import com.lukeneedham.lyrictutor.generated.resources.song_retry
-import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
+import com.lukeneedham.lyrictutor.ui.components.AppButton
+import com.lukeneedham.lyrictutor.ui.components.AppIcon
+import com.lukeneedham.lyrictutor.ui.components.AppToolbar
+import com.lukeneedham.lyrictutor.ui.components.navigationBarHeight
+import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
+import com.lukeneedham.lyrictutor.ui.components.AppText
+import com.lukeneedham.lyrictutor.ui.components.Spinner
+import com.lukeneedham.lyrictutor.ui.components.trackColor
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
+import com.lukeneedham.lyrictutor.ui.theme.LocalAppTheme
+import com.lukeneedham.lyrictutor.ui.theme.withArtColors
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+
+/** How far the list is scrolled when the cover and the title of the song are out of sight: the height of the header down to its title. */
+private const val HEADER_SCROLLED_AWAY_DP = 300
 
 /** All of the page's UI. `internal`: the screenshots of the app use it too. */
 @Composable
 internal fun SongPageContent(
     state: SongUiState,
+    onBack: () -> Unit,
     onRetry: () -> Unit,
     onRetryLyrics: () -> Unit,
     onOpenPaste: () -> Unit,
@@ -94,9 +93,22 @@ internal fun SongPageContent(
     onWordClick: (SelectedWord) -> Unit,
     onWordDismiss: () -> Unit,
 ) {
-    val theme = AppTheme.current
+    // The page is painted with the colours of the song's cover, once they are read
+    val appTheme = AppTheme.current
+    val artColors = (state as? SongUiState.Loaded)?.artColors
+    val theme = remember(appTheme, artColors) { if (artColors == null) appTheme else appTheme.withArtColors(artColors) }
     val uriHandler = LocalUriHandler.current
-    var sheetHeightPx by remember { mutableIntStateOf(0) }
+    // The sheet opens over the lower half of the page; the page height is what that is measured against
+    var pageHeightPx by remember { mutableIntStateOf(0) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    // Once the cover and the title have scrolled out of sight they move into the toolbar
+    val isHeaderScrolledAway by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > with(density) { HEADER_SCROLLED_AWAY_DP.dp.toPx() }
+        }
+    }
     // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
     fun playOnSpotify(trackId: String) {
         try {
@@ -105,316 +117,192 @@ internal fun SongPageContent(
             Logger.e("Could not open the song in Spotify", e)
         }
     }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(theme.background)
-            .safeDrawingPadding(),
-    ) {
-        when (state) {
-            SongUiState.Loading -> Message(text = stringResource(Res.string.song_loading), modifier = Modifier.padding(16.dp))
+    CompositionLocalProvider(LocalAppTheme provides theme) {
+    Box(modifier = Modifier.fillMaxSize().background(theme.background).onSizeChanged { pageHeightPx = it.height }) {
+        // A glow of the song's own colours at the top, behind the toolbar and the cover: it reaches under the status bar
+        if (state is SongUiState.Loaded) {
+            val glowStart = artColors?.primary ?: trackColor(state.track.trackId)
+            val glowEnd = artColors?.secondary ?: trackColor(state.track.trackId.reversed(), value = 0.6f)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(420.dp)
+                    .background(Brush.verticalGradient(listOf(glowStart.copy(alpha = 0.38f), glowEnd.copy(alpha = 0.12f), Color.Transparent))),
+            )
+        }
+        Column(modifier = Modifier.fillMaxSize().sideInsetsPadding().imePadding()) {
+            AppToolbar(
+                onBack = onBack,
+                center = (state as? SongUiState.Loaded)?.let { loaded ->
+                    {
+                        AnimatedVisibility(visible = isHeaderScrolledAway, enter = fadeIn(), exit = fadeOut()) {
+                            SongToolbarTitle(track = loaded.track, onClick = { scope.launch { listState.animateScrollToItem(0) } })
+                        }
+                    }
+                },
+            )
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            when (state) {
+                SongUiState.Loading -> CenteredMessage(text = stringResource(Res.string.song_loading), showSpinner = true)
 
-            is SongUiState.Error -> Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Message(
+                is SongUiState.Error -> CenteredMessage(
                     text = stringResource(if (state.isNetwork) Res.string.song_error_network else Res.string.song_error_unreadable),
                     isError = true,
+                    action = { AppButton(text = stringResource(Res.string.song_retry), onClick = onRetry, icon = AppIcon.Refresh) },
                 )
-                Button(text = stringResource(Res.string.song_retry), onClick = onRetry)
-            }
 
-            is SongUiState.Loaded -> {
-                val listState = rememberLazyListState()
-                // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
-                val sheetHeight = if (state.selectedWord != null) sheetHeightPx else 0
-                val firstLineItem = 2 + if ((state.lyrics as? LyricsUiState.Found)?.lyrics?.source == LyricsSourceKind.Pasted) 1 else 0
-                LaunchedEffect(state.selectedWord, sheetHeight) {
-                    val selected = state.selectedWord ?: return@LaunchedEffect
-                    val target = firstLineItem + selected.lineIndex
-                    val layout = listState.layoutInfo
-                    val item = layout.visibleItemsInfo.firstOrNull { it.index == target }
-                    val visibleEnd = layout.viewportEndOffset - sheetHeight
-                    when {
-                        item == null || item.offset < layout.viewportStartOffset -> listState.animateScrollToItem(target)
-                        item.offset + item.size > visibleEnd -> listState.animateScrollBy((item.offset + item.size - visibleEnd).toFloat())
+                is SongUiState.Loaded -> {
+                    val lyricsFound = state.lyrics as? LyricsUiState.Found
+                    val hasNotice = lyricsFound != null && state.annotationStatus != AnnotationStatus.Idle
+                    // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
+                    val sheetHeight = if (state.selectedWord != null) pageHeightPx / 2 else 0
+                    // The items before the first line: the header, the notice (when there is one) and the title of the lyrics
+                    val firstLineItem = 2 + if (hasNotice) 1 else 0
+                    LaunchedEffect(state.selectedWord, sheetHeight) {
+                        val selected = state.selectedWord ?: return@LaunchedEffect
+                        val target = firstLineItem + selected.lineIndex
+                        val layout = listState.layoutInfo
+                        val item = layout.visibleItemsInfo.firstOrNull { it.index == target }
+                        val visibleEnd = layout.viewportEndOffset - sheetHeight
+                        when {
+                            item == null || item.offset < layout.viewportStartOffset -> listState.animateScrollToItem(target)
+                            item.offset + item.size > visibleEnd -> listState.animateScrollBy((item.offset + item.size - visibleEnd).toFloat())
+                        }
                     }
-                }
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = listState,
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + with(LocalDensity.current) { sheetHeight.toDp() }),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item { Header(state.track, onPlay = { playOnSpotify(state.track.trackId) }) }
-                    when (val lyrics = state.lyrics) {
-                        LyricsUiState.Loading -> item { Message(text = stringResource(Res.string.lyrics_loading)) }
-
-                        is LyricsUiState.Found -> {
-                            if (lyrics.lyrics.source == LyricsSourceKind.Pasted) {
-                                item { Message(text = stringResource(Res.string.lyrics_pasted_note), isSubtle = true) }
-                            }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        state = listState,
+                        contentPadding = PaddingValues(
+                            start = 20.dp,
+                            end = 20.dp,
+                            bottom = 32.dp + navigationBarHeight() + with(LocalDensity.current) { sheetHeight.toDp() },
+                        ),
+                    ) {
+                        item {
+                            SongHeader(
+                                track = state.track,
+                                canTranslateAgain = state.annotationStatus == AnnotationStatus.Idle && state.annotations.isNotEmpty(),
+                                onPlay = { playOnSpotify(state.track.trackId) },
+                                onTranslateAgain = onTranslateAgain,
+                            )
+                        }
+                        if (hasNotice) {
                             item {
                                 AnnotationNotice(
                                     status = state.annotationStatus,
                                     detail = state.annotationDetail,
                                     doneLines = state.annotations.size,
-                                    totalLines = lyrics.lyrics.lines.size,
+                                    totalLines = lyricsFound?.lyrics?.lines?.size ?: 0,
                                     onRetry = onRetryAnnotations,
-                                    onTranslateAgain = onTranslateAgain,
                                     onOpenSettings = onOpenSettings,
+                                    modifier = Modifier.padding(top = 24.dp),
                                 )
                             }
-                            itemsIndexed(lyrics.lyrics.lines) { index, line ->
+                        }
+                        item {
+                            LyricsTitle(
+                                showHint = lyricsFound != null,
+                                isPasted = lyricsFound?.lyrics?.source == LyricsSourceKind.Pasted,
+                            )
+                        }
+                        when (val lyrics = state.lyrics) {
+                            LyricsUiState.Loading -> item {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    Spinner(diameter = 20.dp)
+                                    AppText(text = stringResource(Res.string.lyrics_loading), color = theme.onSurfaceVariant, size = 15.sp)
+                                }
+                            }
+
+                            is LyricsUiState.Found -> itemsIndexed(lyrics.lyrics.lines) { index, line ->
                                 LyricLineRow(
                                     line = line,
                                     annotation = state.annotations[index],
+                                    isTranslating = state.annotationStatus == AnnotationStatus.Loading,
                                     selectedToken = state.selectedWord?.takeIf { it.lineIndex == index }?.tokenIndex,
                                     onWordClick = { word, language, token ->
                                         onWordClick(SelectedWord(word, language, lineIndex = index, tokenIndex = token))
                                     },
+                                    modifier = Modifier.padding(bottom = 14.dp),
+                                )
+                            }
+
+                            LyricsUiState.NotFound, LyricsUiState.Error -> item {
+                                MissingLyrics(
+                                    isError = lyrics == LyricsUiState.Error,
+                                    pasteText = state.pasteText,
+                                    onRetryLyrics = onRetryLyrics,
+                                    onOpenPaste = onOpenPaste,
+                                    onPasteChange = onPasteChange,
+                                    onSavePaste = onSavePaste,
+                                    onClosePaste = onClosePaste,
                                 )
                             }
                         }
-
-                        LyricsUiState.NotFound, LyricsUiState.Error -> item {
-                            MissingLyrics(
-                                isError = lyrics == LyricsUiState.Error,
-                                pasteText = state.pasteText,
-                                onRetryLyrics = onRetryLyrics,
-                                onOpenPaste = onOpenPaste,
-                                onPasteChange = onPasteChange,
-                                onSavePaste = onSavePaste,
-                                onClosePaste = onClosePaste,
-                            )
-                        }
                     }
                 }
+            }
             }
         }
         if (state is SongUiState.Loaded) {
             WordSheet(
-                word = state.selectedWord?.surface,
+                selected = state.selectedWord,
                 wiktionary = state.wiktionary,
                 onOpenUrl = uriHandler::openUri,
-                onHeightChange = { sheetHeightPx = it },
                 onDismiss = onWordDismiss,
             )
         }
     }
-}
-
-@Composable
-private fun Header(track: TrackInfo, onPlay: () -> Unit) {
-    val theme = AppTheme.current
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AsyncImage(
-            model = track.coverUrl,
-            contentDescription = stringResource(Res.string.song_cover_description),
-            modifier = Modifier
-                .size(160.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(theme.surface),
-        )
-        BasicText(
-            text = track.title,
-            style = TextStyle(
-                color = theme.onBackground,
-                fontFamily = theme.fontFamily,
-                fontSize = 24.sp,
-                lineHeight = 32.sp,
-                fontWeight = FontWeight.SemiBold,
-            ),
-        )
-        BasicText(
-            text = track.artists.joinToString(", "),
-            style = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp),
-        )
-        Button(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay)
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LyricLineRow(
-    line: LyricLine,
-    annotation: LineAnnotation?,
-    selectedToken: Int?,
-    onWordClick: (word: String, language: String?, tokenIndex: Int) -> Unit,
-) {
+private fun LyricsTitle(showHint: Boolean, isPasted: Boolean) {
     val theme = AppTheme.current
-    val textStyle = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 18.sp, lineHeight = 26.sp)
-    Column {
-        // Every word of the line can be tapped: Wiktionary is asked about it then, in the language the AI gave to the line
-        FlowRow {
-            for ((tokenIndex, token) in line.text.split(' ').filter { it.isNotEmpty() }.withIndex()) {
-                Box(
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .padding(horizontal = 3.dp)
-                        .clickable { onWordClick(token, annotation?.languageOf(token), tokenIndex) },
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    // The word whose sheet is open is marked, so it is clear which word the sheet is about
-                    val isSelected = tokenIndex == selectedToken
-                    BasicText(
-                        text = token,
-                        modifier = Modifier
-                            .then(if (isSelected) Modifier.background(theme.primary.copy(alpha = 0.3f), RoundedCornerShape(6.dp)) else Modifier)
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                        style = textStyle,
-                    )
-                }
-            }
-        }
-        annotation?.translation?.let { translation ->
-            BasicText(
-                text = translation,
-                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 15.sp, lineHeight = 22.sp),
+    Column(modifier = Modifier.padding(top = 32.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        AppText(text = stringResource(Res.string.song_lyrics_title), size = 20.sp, weight = FontWeight.Bold)
+        if (showHint) AppText(text = stringResource(Res.string.song_lyrics_hint), color = theme.onSurfaceVariant, size = 14.sp)
+        if (isPasted) {
+            AppText(
+                text = stringResource(Res.string.lyrics_pasted_note),
+                color = theme.onPrimaryContainer,
+                size = 12.sp,
+                weight = FontWeight.Medium,
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(theme.primaryContainer)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
     }
 }
 
+/** A message in the middle of the page, with something to do about it ([action]) when it is an error. */
 @Composable
-private fun AnnotationNotice(
-    status: AnnotationStatus,
-    detail: String?,
-    doneLines: Int,
-    totalLines: Int,
-    onRetry: () -> Unit,
-    onTranslateAgain: () -> Unit,
-    onOpenSettings: () -> Unit,
-) {
-    val message = when (status) {
-        AnnotationStatus.Idle -> {
-            // Nothing to say when it went well: only the way to start again, once there is something to throw away
-            if (doneLines > 0) Button(text = stringResource(Res.string.song_translate_again), onClick = onTranslateAgain, isPrimary = false)
-            return
-        }
-        AnnotationStatus.Loading -> stringResource(Res.string.annotation_progress, doneLines, totalLines)
-        AnnotationStatus.MissingKey -> stringResource(Res.string.annotation_missing_key)
-        AnnotationStatus.InvalidKey -> stringResource(Res.string.annotation_invalid_key)
-        AnnotationStatus.RateLimited -> stringResource(Res.string.annotation_rate_limited)
-        AnnotationStatus.DailyLimit -> stringResource(Res.string.annotation_daily_limit)
-        AnnotationStatus.Failed -> stringResource(Res.string.annotation_failed)
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Message(text = message, isError = status != AnnotationStatus.Loading, isSubtle = status == AnnotationStatus.Loading)
-        if (detail != null) Message(text = detail, isSubtle = true)
-        when (status) {
-            AnnotationStatus.MissingKey, AnnotationStatus.InvalidKey, AnnotationStatus.DailyLimit ->
-                Button(text = stringResource(Res.string.annotation_open_settings), onClick = onOpenSettings)
-            AnnotationStatus.RateLimited, AnnotationStatus.Failed ->
-                Button(text = stringResource(Res.string.annotation_retry), onClick = onRetry)
-            else -> Unit
-        }
-    }
-}
-
-@Composable
-private fun MissingLyrics(
-    isError: Boolean,
-    pasteText: String?,
-    onRetryLyrics: () -> Unit,
-    onOpenPaste: () -> Unit,
-    onPasteChange: (String) -> Unit,
-    onSavePaste: () -> Unit,
-    onClosePaste: () -> Unit,
-) {
-    val theme = AppTheme.current
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Message(
-            text = stringResource(if (isError) Res.string.lyrics_error else Res.string.lyrics_not_found),
-            isError = isError,
-        )
-        if (pasteText == null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (isError) Button(text = stringResource(Res.string.lyrics_retry), onClick = onRetryLyrics)
-                Button(text = stringResource(Res.string.lyrics_paste), onClick = onOpenPaste)
-            }
-        } else {
-            val textStyle = TextStyle(color = theme.onSurface, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp)
-            BasicTextField(
-                value = pasteText,
-                onValueChange = onPasteChange,
-                textStyle = textStyle,
-                cursorBrush = SolidColor(theme.primary),
-                modifier = Modifier.fillMaxWidth(),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 160.dp)
-                            .background(theme.surface, RoundedCornerShape(12.dp))
-                            .border(1.dp, theme.outline, RoundedCornerShape(12.dp))
-                            .padding(16.dp),
-                    ) {
-                        if (pasteText.isEmpty()) {
-                            BasicText(
-                                text = stringResource(Res.string.lyrics_paste_hint),
-                                style = textStyle.copy(color = theme.outline),
-                            )
-                        }
-                        innerTextField()
-                    }
-                },
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(text = stringResource(Res.string.lyrics_paste_save), onClick = onSavePaste)
-                Button(text = stringResource(Res.string.lyrics_paste_cancel), onClick = onClosePaste, isPrimary = false)
-            }
-        }
-    }
-}
-
-@Composable
-private fun Message(
+private fun CenteredMessage(
     text: String,
-    modifier: Modifier = Modifier,
+    showSpinner: Boolean = false,
     isError: Boolean = false,
-    isSubtle: Boolean = false,
+    action: (@Composable () -> Unit)? = null,
 ) {
     val theme = AppTheme.current
-    BasicText(
-        text = text,
-        modifier = modifier,
-        style = TextStyle(
-            color = when {
-                isError -> theme.error
-                isSubtle -> theme.outline
-                else -> theme.onBackground
-            },
-            fontFamily = theme.fontFamily,
-            fontSize = if (isSubtle) 14.sp else 16.sp,
-            lineHeight = if (isSubtle) 20.sp else 24.sp,
-        ),
-    )
-}
-
-@Composable
-private fun Button(text: String, onClick: () -> Unit, isPrimary: Boolean = true) {
-    val theme = AppTheme.current
-    Box(
-        modifier = Modifier
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(if (isPrimary) theme.primary else theme.surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp),
-        contentAlignment = Alignment.Center,
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
     ) {
-        BasicText(
+        if (showSpinner) Spinner(diameter = 36.dp)
+        AppText(
             text = text,
-            style = TextStyle(
-                color = if (isPrimary) theme.onPrimary else theme.onSurface,
-                fontFamily = theme.fontFamily,
-                fontSize = 16.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Medium,
-            ),
+            color = if (isError) theme.error else theme.onSurfaceVariant,
+            size = 16.sp,
+            textAlign = TextAlign.Center,
         )
+        action?.invoke()
     }
 }
 
@@ -433,6 +321,7 @@ private fun PreviewContent(state: SongUiState) {
     AppTheme {
         SongPageContent(
             state = state,
+            onBack = {},
             onRetry = {},
             onRetryLyrics = {},
             onOpenPaste = {},
@@ -505,6 +394,12 @@ private fun PreviewNotFound() {
 @Composable
 private fun PreviewPasting() {
     PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.NotFound, pasteText = ""))
+}
+
+@Preview
+@Composable
+private fun PreviewLoading() {
+    PreviewContent(SongUiState.Loading)
 }
 
 @Preview

@@ -37,3 +37,12 @@ private fun HomePageScreenshot() {
         HomePageContent(state = state, onInputChange = {}, onSubmit = {}, onOpenSettings = {}, onOpenSong = {})
     }
 }
+
+/** Rendered by CI to docs/screenshots/<position in order.txt>-HomePageEmpty.png. */
+@Preview
+@Composable
+private fun HomePageEmptyScreenshot() {
+    AppTheme {
+        HomePageContent(state = HomeUiState(), onInputChange = {}, onSubmit = {}, onOpenSettings = {}, onOpenSong = {})
+    }
+}

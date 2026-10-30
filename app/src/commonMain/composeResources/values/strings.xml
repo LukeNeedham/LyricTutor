@@ -1,33 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_title">Settings</string>
+    <!-- Shared -->
+    <string name="action_back">Back</string>
+    <string name="action_close">Close</string>
+    <string name="action_open_settings">Settings</string>
+
+    <!-- Home -->
     <string name="home_title">LyricTutor</string>
-    <string name="home_subtitle">Paste a Spotify song link to learn from its lyrics.</string>
-    <string name="home_link_hint">https://open.spotify.com/track/…</string>
+    <string name="home_hero_title">Learn a language from the songs you love</string>
+    <string name="home_hero_subtitle">Paste a Spotify link to see the lyrics with a translation, and tap any word to understand it.</string>
+    <string name="home_link_hint">Paste a Spotify song link</string>
     <string name="home_open_song">Open song</string>
-    <string name="home_invalid_link">That is not a Spotify song link.</string>
+    <string name="home_invalid_link">That is not a Spotify song link. Use Share, then Copy link, in Spotify.</string>
+    <string name="home_recents_title">Recent songs</string>
+    <string name="home_how_title">How it works</string>
+    <string name="home_how_1_title">Pick a song</string>
+    <string name="home_how_1_body">Share it to LyricTutor from Spotify, or paste its link above.</string>
+    <string name="home_how_2_title">Read along</string>
+    <string name="home_how_2_body">Every line of the lyrics comes with its English translation.</string>
+    <string name="home_how_3_title">Tap any word</string>
+    <string name="home_how_3_body">See its meaning, its dictionary form and how it was built.</string>
+
+    <!-- Song -->
     <string name="song_loading">Loading the song…</string>
     <string name="song_cover_description">Album cover</string>
     <string name="song_error_network">Could not reach Spotify. Check your connection.</string>
     <string name="song_error_unreadable">Could not read this song from Spotify.</string>
     <string name="song_retry">Try again</string>
-    <string name="home_recents_title">Recent songs</string>
+    <string name="song_play_on_spotify">Play on Spotify</string>
+    <string name="song_translate_again">Translate again</string>
+    <string name="song_lyrics_title">Lyrics</string>
+    <string name="song_lyrics_hint">Tap any word to see what it means.</string>
+
+    <!-- Lyrics -->
     <string name="lyrics_loading">Finding the lyrics…</string>
     <string name="lyrics_not_found">No lyrics found for this song.</string>
+    <string name="lyrics_not_found_hint">You can paste them yourself and still get translations and word meanings.</string>
     <string name="lyrics_error">Could not look up the lyrics. Check your connection.</string>
     <string name="lyrics_retry">Try again</string>
     <string name="lyrics_paste">Paste the lyrics</string>
     <string name="lyrics_paste_hint">Paste the lyrics here, one line per line</string>
-    <string name="lyrics_paste_save">Save</string>
+    <string name="lyrics_paste_save">Save lyrics</string>
     <string name="lyrics_paste_cancel">Cancel</string>
     <string name="lyrics_pasted_note">Lyrics pasted by you</string>
-    <string name="settings_ai_title">AI explanations</string>
-    <string name="settings_api_key_label">Gemini API key</string>
-    <string name="settings_model_label">Gemini model</string>
-    <string name="settings_api_key_note">Your own key from Google AI Studio. It is stored encrypted on this device and sent only to Google.</string>
-    <string name="settings_save">Save</string>
-    <string name="settings_saved">Saved</string>
-    <string name="settings_attribution">Lyrics come from LRCLIB. Word information is from Wiktionary (CC BY-SA). Translations are written by an AI and can be wrong.</string>
+
+    <!-- Translations -->
     <string name="annotation_progress">Translating… %1$d of %2$d lines</string>
     <string name="annotation_missing_key">Add your Gemini API key in Settings to see translations and word meanings.</string>
     <string name="annotation_invalid_key">Gemini refused your API key. Check it in Settings.</string>
@@ -36,19 +53,31 @@
     <string name="annotation_failed">Could not get the translations.</string>
     <string name="annotation_open_settings">Open Settings</string>
     <string name="annotation_retry">Try again</string>
-    <string name="word_language">Language</string>
+
+    <!-- Word sheet -->
     <string name="word_wiktionary_not_found">No Wiktionary page found for this word.</string>
-    <string name="word_wiktionary_loading">Looking it up on Wiktionary…</string>
     <string name="word_wiktionary_error">Could not reach Wiktionary.</string>
+    <string name="word_meanings_of">Meanings of %1$s</string>
+    <string name="word_no_senses">Wiktionary has a page for this word, but no meanings.</string>
+    <string name="word_open_wiktionary">Open on Wiktionary</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_ai_title">AI translations</string>
+    <string name="settings_ai_intro">Translations are written by Gemini, an AI from Google. Add your own free key to turn them on.</string>
+    <string name="settings_api_key_label">Gemini API key</string>
+    <string name="settings_model_label">Gemini model</string>
+    <string name="settings_api_key_note">Your own key from Google AI Studio. It is stored encrypted on this device and sent only to Google.</string>
+    <string name="settings_key_show">Show the key</string>
+    <string name="settings_key_hide">Hide the key</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Saved</string>
+    <string name="settings_about_title">Credits</string>
+    <string name="settings_attribution">Lyrics come from LRCLIB. Word meanings and forms come from Wiktionary, under the CC BY-SA license. Translations are written by an AI and can be wrong.</string>
     <string name="settings_models_show">Show the models of this key</string>
     <string name="settings_models_loading">Getting the models…</string>
     <string name="settings_models_none">No usable models found for this key.</string>
     <string name="settings_models_need_key">Enter your API key first.</string>
     <string name="settings_models_invalid_key">Gemini refused this key.</string>
     <string name="settings_models_failed">Could not get the models. Check your connection.</string>
-    <string name="song_play_on_spotify">Play on Spotify</string>
-    <string name="song_translate_again">Translate again</string>
-    <string name="word_meanings_of">Meanings of %1$s</string>
-    <string name="word_no_senses">Wiktionary has a page for this word, but no meanings.</string>
-    <string name="word_source_note">From Wiktionary, under the CC BY-SA license. Open the page.</string>
 </resources>

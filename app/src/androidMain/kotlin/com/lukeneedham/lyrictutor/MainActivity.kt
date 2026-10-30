@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -15,6 +16,8 @@ class MainActivity : ComponentActivity() {
     private var sharedText by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Content is drawn behind the status and navigation bars: the pages keep their text clear of them with the window insets
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         // Only on a fresh start: a recreated activity (rotation) still has the old intent, which was already handled
         if (savedInstanceState == null) sharedText = intent.sharedText()

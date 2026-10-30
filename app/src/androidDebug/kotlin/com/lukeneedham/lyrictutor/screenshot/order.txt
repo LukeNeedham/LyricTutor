@@ -1,3 +1,5 @@
 HomePage
+HomePageEmpty
 SongPage
+SongPageTranslating
 SettingsPage
