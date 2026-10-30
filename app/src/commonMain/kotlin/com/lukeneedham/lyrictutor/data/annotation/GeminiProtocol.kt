@@ -102,6 +102,16 @@ object GeminiProtocol {
         }
     }
 
+    /** The message of an error answer (`{"error":{"message":"..."}}`), or null when the body is not one. */
+    fun errorMessage(body: String): String? = try {
+        json.decodeFromString(ErrorResponse.serializer(), body).error?.message
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
+    /** Whether the body of a 429 answer says that a limit per day was hit (it names the quota, for example "...PerDay...limit exceeded"). */
+    fun isDailyQuota(body: String): Boolean = body.contains("PerDay", ignoreCase = true) || body.contains("per day", ignoreCase = true)
+
     /** The tokens an answer used, or null when the answer does not say. */
     fun parseUsage(body: String): TokenUsage? = try {
         json.decodeFromString(Response.serializer(), body).usageMetadata?.let { usage ->
