@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -80,6 +81,7 @@ internal fun SongPageContent(
     onWordDismiss: () -> Unit,
 ) {
     val theme = AppTheme.current
+    val uriHandler = LocalUriHandler.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -142,7 +144,12 @@ internal fun SongPageContent(
                 }
             }
         }
-        if (state is SongUiState.Loaded) WordSheet(word = state.selectedWord, onDismiss = onWordDismiss)
+        if (state is SongUiState.Loaded) WordSheet(
+                word = state.selectedWord,
+                wiktionary = state.wiktionary,
+                onOpenUrl = uriHandler::openUri,
+                onDismiss = onWordDismiss,
+            )
     }
 }
 

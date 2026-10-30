@@ -42,7 +42,11 @@
     <string name="word_morphology">Form</string>
     <string name="word_meaning">Meaning here</string>
     <string name="word_note">Note</string>
-    <string name="word_etymology">Where it comes from</string>
+    <string name="word_wiktionary_title">Where it comes from</string>
+    <string name="word_wiktionary_open">%1$s on Wiktionary</string>
+    <string name="word_wiktionary_not_found">No Wiktionary page found. Search Wiktionary</string>
+    <string name="word_wiktionary_loading">Looking it up on Wiktionary…</string>
+    <string name="word_wiktionary_error">Could not reach Wiktionary.</string>
     <string name="word_cognates">English words with the same root</string>
     <string name="word_close">Close</string>
 </resources>

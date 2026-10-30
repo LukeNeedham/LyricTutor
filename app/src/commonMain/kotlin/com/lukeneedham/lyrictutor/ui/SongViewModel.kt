@@ -11,6 +11,8 @@ import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.track.TrackResolveException
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryProtocol
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,12 +26,15 @@ class SongViewModel(
     private val songCache: SongCache,
     private val lyricsRepository: LyricsRepository,
     private val annotationRepository: AnnotationRepository,
+    private val wiktionaryLookup: WiktionaryLookup,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
     val uiState: StateFlow<SongUiState> = _uiState.asStateFlow()
 
     private var annotationJob: Job? = null
+    private var wiktionaryJob: Job? = null
+    private val wiktionaryCache = mutableMapOf<String, WiktionaryUiState>()
 
     init {
         load()
@@ -49,9 +54,30 @@ class SongViewModel(
         annotate(loaded.track, lyrics)
     }
 
-    fun onWordClick(word: WordAnnotation) = updateLoaded { it.copy(selectedWord = word) }
+    fun onWordClick(word: WordAnnotation) {
+        wiktionaryJob?.cancel()
+        val key = "${word.language}|${word.surface.lowercase()}|${word.lemma}"
+        val known = wiktionaryCache[key]
+        updateLoaded { it.copy(selectedWord = word, wiktionary = known ?: WiktionaryUiState.Loading) }
+        if (known != null) return
+        wiktionaryJob = viewModelScope.launch {
+            val state = wiktionaryLookup.find(word).fold(
+                onSuccess = { entry ->
+                    if (entry != null) WiktionaryUiState.Found(entry.title, entry.url)
+                    else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(word.surface))
+                },
+                onFailure = { WiktionaryUiState.Error },
+            )
+            // A failure is not kept, so that tapping the word again asks again
+            if (state !is WiktionaryUiState.Error) wiktionaryCache[key] = state
+            updateLoaded { if (it.selectedWord == word) it.copy(wiktionary = state) else it }
+        }
+    }
 
-    fun onWordDismiss() = updateLoaded { it.copy(selectedWord = null) }
+    fun onWordDismiss() {
+        wiktionaryJob?.cancel()
+        updateLoaded { it.copy(selectedWord = null) }
+    }
 
     fun onOpenPaste() = updateLoaded { it.copy(pasteText = "") }
 

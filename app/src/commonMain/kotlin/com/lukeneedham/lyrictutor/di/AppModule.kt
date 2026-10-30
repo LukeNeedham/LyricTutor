@@ -7,6 +7,8 @@ import com.lukeneedham.lyrictutor.data.lyrics.LrclibLyricsSource
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSource
 import com.lukeneedham.lyrictutor.data.track.SpotifyTrackResolver
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryClient
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
 import com.lukeneedham.lyrictutor.ui.HomeViewModel
 import com.lukeneedham.lyrictutor.ui.SettingsViewModel
@@ -33,6 +35,7 @@ val appModule = module {
     single<LyricsSource> { LrclibLyricsSource(client = get()) }
     single { LyricsRepository(songCache = get(), source = get()) }
 
+    single<WiktionaryLookup> { WiktionaryClient(client = get()) }
     single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
     single { AnnotationRepository(songCache = get(), annotator = get()) }
 
@@ -43,6 +46,7 @@ val appModule = module {
             songCache = get(),
             lyricsRepository = get(),
             annotationRepository = get(),
+            wiktionaryLookup = get(),
         ) }
     viewModel { SettingsViewModel(isDebugEnabled = DebugKit.enabled, settingsStore = get()) }
 }

@@ -30,7 +30,7 @@ import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 
 /** The container of the word sheet: a scrim and a surface at the bottom. Its content is [WordSheetContent]. */
 @Composable
-internal fun WordSheet(word: WordAnnotation?, onDismiss: () -> Unit) {
+internal fun WordSheet(word: WordAnnotation?, wiktionary: WiktionaryUiState, onOpenUrl: (String) -> Unit, onDismiss: () -> Unit) {
     val theme = AppTheme.current
     // The last word stays on screen while the sheet slides away
     var shown by remember { mutableStateOf(word) }
@@ -60,7 +60,7 @@ internal fun WordSheet(word: WordAnnotation?, onDismiss: () -> Unit) {
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
                         .verticalScroll(rememberScrollState()),
                 ) {
-                    WordSheetContent(word = it, modifier = Modifier.padding(24.dp))
+                    WordSheetContent(word = it, wiktionary = wiktionary, onOpenUrl = onOpenUrl, modifier = Modifier.padding(24.dp))
                 }
             }
         }

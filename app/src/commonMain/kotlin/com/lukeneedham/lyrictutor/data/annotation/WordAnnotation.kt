@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class WordAnnotation(
     /** The word as written in the line. */
     val surface: String,
-    /** The language of this word, as a code like "es" or "nl": a song can mix languages. */
+    /** The English name of the language of this word, such as "Spanish" or "Dutch": a song can mix languages. */
     val language: String? = null,
     /** The dictionary form. */
     val lemma: String? = null,
@@ -18,7 +18,6 @@ data class WordAnnotation(
     val meaning: String? = null,
     /** Slang, an idiom, an elision such as "pa'" for "para". */
     val note: String? = null,
-    val etymology: String? = null,
     /** English words with the same root, to help remember the word. */
     val cognates: List<String> = emptyList(),
 )

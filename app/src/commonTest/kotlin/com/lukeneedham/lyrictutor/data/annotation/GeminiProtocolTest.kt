@@ -48,7 +48,7 @@ class GeminiProtocolTest {
     private val answer = """
         {"candidates":[{"content":{"parts":[{"text":"{\"lines\":[{\"index\":0,\"translation\":\"If I go\",\"words\":[
         {\"surface\":\"voy\",\"language\":\"es\",\"lemma\":\"ir\",\"partOfSpeech\":\"verb\",\"morphology\":\"present, 1st person singular\",
-        \"meaning\":\"I go\",\"note\":null,\"etymology\":\"From Latin vadere\",\"cognates\":[\"evade\"]},
+        \"meaning\":\"I go\",\"note\":null,\"cognates\":[\"evade\"]},
         {\"surface\":\"me\"}]}]}"}]},"finishReason":"STOP"}],"usageMetadata":{"totalTokenCount":10}}
     """.trimIndent().replace("\n", "")
 

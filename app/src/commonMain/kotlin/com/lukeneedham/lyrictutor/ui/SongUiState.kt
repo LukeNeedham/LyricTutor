@@ -19,6 +19,8 @@ sealed interface SongUiState {
         val annotationDetail: String? = null,
         /** The word whose sheet is open, or null. */
         val selectedWord: WordAnnotation? = null,
+        /** The Wiktionary link of [selectedWord]. */
+        val wiktionary: WiktionaryUiState = WiktionaryUiState.Loading,
     ) : SongUiState
 
     /** [isNetwork]: no connection, as opposed to a page the app could not read. */
