@@ -16,13 +16,20 @@ object DominantColors {
     /** The secondary colour is at least this far from the primary one. */
     private const val DIFFERENT_COLOR_DISTANCE = 100.0
 
+    /** A colour needs at least this much saturation, and this much brightness, to count as a colour and not as a grey, black or white. */
+    private const val MIN_SATURATION = 0.25
+    private const val MIN_BRIGHTNESS = 0.25
+
     /** Pixels less opaque than this are the background of the image, not a colour of it. */
     private const val MIN_ALPHA = 128
 
     /** [pixels] are ARGB, as `Bitmap.getPixels` gives them. Null when there is no opaque pixel. */
     fun extract(pixels: IntArray): ArtColors? {
-        val bins = countBins(pixels)
-        if (bins.isEmpty()) return null
+        val allBins = countBins(pixels)
+        if (allBins.isEmpty()) return null
+
+        // Greys, blacks and whites are never a colour of the page, unless the image has nothing else
+        val bins = allBins.filter { it.color.isChromatic() }.ifEmpty { allBins }
 
         val primaryBin = bins.first()
         val primary = merged(around = primaryBin, bins = bins)
@@ -32,7 +39,7 @@ object DominantColors {
         val secondary = if (secondaryBin != null) {
             merged(around = secondaryBin, bins = bins.filter { it.color.distanceTo(primary) >= DIFFERENT_COLOR_DISTANCE })
         } else {
-            // A cover of one colour (or of shades of it): a lighter or darker version is the best second colour there is
+            // Only one colour (or shades of it) besides greys: a lighter or darker version of it is the best second colour there is
             lerp(primary, if (primary.luminance() > 0.5f) Color.Black else Color.White, 0.4f)
         }
         return ArtColors(primary = primary.toColor(), secondary = secondary.toColor())
@@ -87,6 +94,15 @@ object DominantColors {
 
     /** A colour with channels from 0 to 255, kept as numbers so that averaging loses nothing. */
     private class Rgb(val red: Double, val green: Double, val blue: Double) {
+        /** Neither grey (too little saturation, which also rules out white) nor black (too dark). */
+        fun isChromatic(): Boolean {
+            val brightest = maxOf(red, green, blue)
+            val darkest = minOf(red, green, blue)
+            val brightness = brightest / 255.0
+            val saturation = if (brightest == 0.0) 0.0 else (brightest - darkest) / brightest
+            return saturation >= MIN_SATURATION && brightness >= MIN_BRIGHTNESS
+        }
+
         fun distanceTo(other: Rgb): Double {
             val r = red - other.red
             val g = green - other.green
