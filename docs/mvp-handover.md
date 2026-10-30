@@ -114,6 +114,17 @@ them here). The ones that matter most when adding features:
 - The stop hook's warnings about "unpushed" or "Unverified" commits by `github-actions[bot]` are CI's own commits: run `git fetch origin`
   and do nothing else. Never amend, rebase or force-push over them.
 
+### 3b. The look of the app (UI redesign)
+
+The proof-of-concept screens were redesigned (data flows untouched). The shared pieces are in `ui/components/`: `AppText` (the one way to
+draw text), `AppIcon` / `AppIconImage` (icons drawn by hand on a 24 grid, since there is no icon library), `AppIconButton`, `AppButton`
+(`Primary`, `Tonal`, `Plain`), `AppTextField`, `CoverArt` (a gradient of the song's own colour under the cover, so a song without a cover
+still looks right) and `Spinner`. `AppThemeValues` gained `surfaceVariant`, `onSurfaceVariant`, `primaryContainer`, `onPrimaryContainer`,
+`border` and the two `gradient*` colours; `outline` stays because the library's `DebugTheme` is mapped from it. Home has a gradient hero
+with the link field and, until a first song is opened, a "How it works" card. The song page has a header (cover, title, actions), stacked
+lyric lines with a pulsing placeholder for translations still on their way, and a status card with a progress bar. Settings is two cards.
+**Not verified**: none of this has been built or run yet; the first CI build is the first compile.
+
 ## 5. How to build on the skeleton
 
 Concrete shapes that fit the rules, for the features below:

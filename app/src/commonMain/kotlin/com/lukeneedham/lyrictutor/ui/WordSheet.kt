@@ -9,10 +9,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,20 +27,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
+import com.lukeneedham.lyrictutor.generated.resources.Res
+import com.lukeneedham.lyrictutor.generated.resources.action_close
+import com.lukeneedham.lyrictutor.ui.components.AppIcon
+import com.lukeneedham.lyrictutor.ui.components.AppIconButton
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 /** The container of the word sheet: a scrim and a surface at the bottom. Its content is [WordSheetContent]. */
 @Composable
-internal fun WordSheet(word: String?, wiktionary: WiktionaryUiState, onOpenUrl: (String) -> Unit, onHeightChange: (Int) -> Unit, onDismiss: () -> Unit) {
+internal fun WordSheet(
+    selected: SelectedWord?,
+    wiktionary: WiktionaryUiState,
+    onOpenUrl: (String) -> Unit,
+    onHeightChange: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val theme = AppTheme.current
     // The last word stays on screen while the sheet slides away
-    var shown by remember { mutableStateOf(word) }
-    if (word != null) shown = word
+    var shown by remember { mutableStateOf(selected) }
+    if (selected != null) shown = selected
 
-    AnimatedVisibility(visible = word != null, enter = fadeIn(), exit = fadeOut()) {
+    AnimatedVisibility(visible = selected != null, enter = fadeIn(), exit = fadeOut()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -46,24 +62,50 @@ internal fun WordSheet(word: String?, wiktionary: WiktionaryUiState, onOpenUrl: 
     }
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         AnimatedVisibility(
-            visible = word != null,
+            visible = selected != null,
             enter = slideInVertically { it },
             exit = slideOutVertically { it },
         ) {
-            shown?.let {
+            shown?.let { word ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         // A fixed height, so that the sheet does not change size when what Wiktionary says arrives
-                        .fillMaxHeight(0.5f)
+                        .fillMaxHeight(0.55f)
                         // The height is passed on, so that the song can scroll the tapped word above the sheet
                         .onSizeChanged { onHeightChange(it.height) }
-                        .background(theme.surface, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(theme.surface, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                        .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                         // Taps on the sheet itself must not reach the scrim
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-                        .verticalScroll(rememberScrollState()),
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
                 ) {
-                    WordSheetContent(word = it, wiktionary = wiktionary, onOpenUrl = onOpenUrl, modifier = Modifier.padding(24.dp))
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 10.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .width(40.dp)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(theme.border),
+                        )
+                        Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                            WordSheetContent(
+                                word = word.surface,
+                                language = word.language,
+                                wiktionary = wiktionary,
+                                onOpenUrl = onOpenUrl,
+                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp).navigationBarsPadding(),
+                            )
+                        }
+                    }
+                    AppIconButton(
+                        icon = AppIcon.Close,
+                        contentDescription = stringResource(Res.string.action_close),
+                        onClick = onDismiss,
+                        tint = theme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 12.dp),
+                    )
                 }
             }
         }

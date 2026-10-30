@@ -7,11 +7,12 @@ import org.koin.compose.viewmodel.koinViewModel
 
 /** The page: connects to the ViewModel and the navigation, and delegates all UI. No preview. */
 @Composable
-fun SettingsPage(onOpenDebug: () -> Unit) {
+fun SettingsPage(onBack: () -> Unit, onOpenDebug: () -> Unit) {
     val viewModel = koinViewModel<SettingsViewModel>()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     SettingsPageContent(
         state = state,
+        onBack = onBack,
         onApiKeyChange = viewModel::onApiKeyChange,
         onModelChange = viewModel::onModelChange,
         onShowModels = viewModel::onShowModels,
