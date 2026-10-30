@@ -23,39 +23,46 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
  * The toolbar of every page, so that nothing in it moves from page to page: always 64dp high under the status bar, the back button first
- * (when there is [onBack]), then the [title], and the [actions] at the end. It has no background of its own.
+ * (when there is [onBack]), then the [title], and the [actions] at the end. [center] is drawn in the middle of the toolbar, over the rest
+ * (a page uses it for something that arrives when the page is scrolled). It has no background of its own.
  */
 @Composable
 internal fun AppToolbar(
     modifier: Modifier = Modifier,
     title: String? = null,
     onBack: (() -> Unit)? = null,
+    center: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .height(64.dp)
             .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (onBack != null) {
-            AppIconButton(icon = AppIcon.Back, contentDescription = stringResource(Res.string.action_back), onClick = onBack)
+        Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                AppIconButton(icon = AppIcon.Back, contentDescription = stringResource(Res.string.action_back), onClick = onBack)
+            }
+            if (title != null) {
+                AppText(
+                    text = title,
+                    size = 22.sp,
+                    weight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(start = if (onBack != null) 4.dp else 16.dp),
+                )
+            } else {
+                Box(modifier = Modifier.weight(1f))
+            }
+            actions()
         }
-        if (title != null) {
-            AppText(
-                text = title,
-                size = 22.sp,
-                weight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).padding(start = if (onBack != null) 4.dp else 16.dp),
-            )
-        } else {
-            Box(modifier = Modifier.weight(1f))
+        // Clear of the back button and of the same width on the other side, so that it is centred on the screen
+        if (center != null) {
+            Box(modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp)) { center() }
         }
-        actions()
     }
 }
 

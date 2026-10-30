@@ -16,7 +16,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,7 +62,6 @@ import com.lukeneedham.lyrictutor.generated.resources.song_retry
 import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppToolbar
-import com.lukeneedham.lyrictutor.ui.components.SettingsAction
 import com.lukeneedham.lyrictutor.ui.components.navigationBarHeight
 import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
 import com.lukeneedham.lyrictutor.ui.components.AppText
@@ -67,6 +72,9 @@ import com.lukeneedham.lyrictutor.ui.theme.LocalAppTheme
 import com.lukeneedham.lyrictutor.ui.theme.withArtColors
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+
+/** How far the list is scrolled when the cover and the title of the song are out of sight: the height of the header down to its title. */
+private const val HEADER_SCROLLED_AWAY_DP = 300
 
 /** All of the page's UI. `internal`: the screenshots of the app use it too. */
 @Composable
@@ -92,6 +100,15 @@ internal fun SongPageContent(
     val uriHandler = LocalUriHandler.current
     // The sheet opens over the lower half of the page; the page height is what that is measured against
     var pageHeightPx by remember { mutableIntStateOf(0) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    // Once the cover and the title have scrolled out of sight they move into the toolbar
+    val isHeaderScrolledAway by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > with(density) { HEADER_SCROLLED_AWAY_DP.dp.toPx() }
+        }
+    }
     // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
     fun playOnSpotify(trackId: String) {
         try {
@@ -114,7 +131,16 @@ internal fun SongPageContent(
             )
         }
         Column(modifier = Modifier.fillMaxSize().sideInsetsPadding().imePadding()) {
-            AppToolbar(onBack = onBack, actions = { SettingsAction(onClick = onOpenSettings) })
+            AppToolbar(
+                onBack = onBack,
+                center = (state as? SongUiState.Loaded)?.let { loaded ->
+                    {
+                        AnimatedVisibility(visible = isHeaderScrolledAway, enter = fadeIn(), exit = fadeOut()) {
+                            SongToolbarTitle(track = loaded.track, onClick = { scope.launch { listState.animateScrollToItem(0) } })
+                        }
+                    }
+                },
+            )
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when (state) {
                 SongUiState.Loading -> CenteredMessage(text = stringResource(Res.string.song_loading), showSpinner = true)
@@ -126,7 +152,6 @@ internal fun SongPageContent(
                 )
 
                 is SongUiState.Loaded -> {
-                    val listState = rememberLazyListState()
                     val lyricsFound = state.lyrics as? LyricsUiState.Found
                     val hasNotice = lyricsFound != null && state.annotationStatus != AnnotationStatus.Idle
                     // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
