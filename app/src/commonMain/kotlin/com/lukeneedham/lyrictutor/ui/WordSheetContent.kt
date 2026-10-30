@@ -3,9 +3,9 @@ package com.lukeneedham.lyrictutor.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -16,39 +16,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryResult
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import com.lukeneedham.lyrictutor.generated.resources.Res
-import com.lukeneedham.lyrictutor.generated.resources.word_ai_note
-import com.lukeneedham.lyrictutor.generated.resources.word_cognates
+import com.lukeneedham.lyrictutor.generated.resources.word_form_of
+import com.lukeneedham.lyrictutor.generated.resources.word_language
+import com.lukeneedham.lyrictutor.generated.resources.word_no_senses
+import com.lukeneedham.lyrictutor.generated.resources.word_source_note
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_error
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_loading
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_not_found
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_open
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_title
-import com.lukeneedham.lyrictutor.generated.resources.word_language
-import com.lukeneedham.lyrictutor.generated.resources.word_lemma
-import com.lukeneedham.lyrictutor.generated.resources.word_meaning
-import com.lukeneedham.lyrictutor.generated.resources.word_morphology
-import com.lukeneedham.lyrictutor.generated.resources.word_note
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/** What the sheet of a word shows. Stateless, and unaware of the sheet around it. */
+/** What the sheet of a word shows: the word, and what Wiktionary says of it. Stateless, and unaware of the sheet around it. */
 @Composable
 internal fun WordSheetContent(
-    word: WordAnnotation,
+    word: String,
     wiktionary: WiktionaryUiState,
     onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val theme = AppTheme.current
+    val textStyle = TextStyle(color = theme.onSurface, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp)
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         BasicText(
-            text = word.surface,
+            text = word,
             style = TextStyle(
                 color = theme.onSurface,
                 fontFamily = theme.fontFamily,
@@ -57,47 +56,67 @@ internal fun WordSheetContent(
                 fontWeight = FontWeight.SemiBold,
             ),
         )
-        word.meaning?.let { Fact(stringResource(Res.string.word_meaning), it) }
-        word.lemma?.let { lemma ->
-            Fact(stringResource(Res.string.word_lemma), listOfNotNull(lemma, word.partOfSpeech).joinToString(" · "))
+        when (wiktionary) {
+            WiktionaryUiState.Loading ->
+                BasicText(stringResource(Res.string.word_wiktionary_loading), style = textStyle.copy(color = theme.outline))
+
+            WiktionaryUiState.Error ->
+                BasicText(stringResource(Res.string.word_wiktionary_error), style = textStyle.copy(color = theme.error))
+
+            is WiktionaryUiState.NotFound -> Link(
+                text = stringResource(Res.string.word_wiktionary_not_found),
+                onClick = { onOpenUrl(wiktionary.searchUrl) },
+            )
+
+            is WiktionaryUiState.Found -> Found(wiktionary.result, onOpenUrl)
         }
-        word.morphology?.let { Fact(stringResource(Res.string.word_morphology), it) }
-        word.language?.let { Fact(stringResource(Res.string.word_language), it) }
-        word.note?.let { Fact(stringResource(Res.string.word_note), it) }
-        WiktionaryLink(wiktionary, onOpenUrl)
-        if (word.cognates.isNotEmpty()) Fact(stringResource(Res.string.word_cognates), word.cognates.joinToString(", "))
         BasicText(
-            text = stringResource(Res.string.word_ai_note),
+            text = stringResource(Res.string.word_source_note),
             modifier = Modifier.padding(top = 4.dp),
             style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 14.sp, lineHeight = 20.sp),
         )
     }
 }
 
-/** Where the word comes from is not asked of the AI: it is a link to the Wiktionary page of the word, at its language. */
 @Composable
-private fun WiktionaryLink(state: WiktionaryUiState, onOpenUrl: (String) -> Unit) {
+private fun Found(result: WiktionaryResult, onOpenUrl: (String) -> Unit) {
     val theme = AppTheme.current
-    Column {
-        BasicText(
-            text = stringResource(Res.string.word_wiktionary_title),
-            style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 13.sp, lineHeight = 18.sp),
-        )
-        val textStyle = TextStyle(color = theme.onSurface, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp)
-        val linkStyle = textStyle.copy(color = theme.primary, textDecoration = TextDecoration.Underline)
-        when (state) {
-            WiktionaryUiState.Loading -> BasicText(stringResource(Res.string.word_wiktionary_loading), style = textStyle.copy(color = theme.outline))
-            WiktionaryUiState.Error -> BasicText(stringResource(Res.string.word_wiktionary_error), style = textStyle.copy(color = theme.error))
-            is WiktionaryUiState.Found -> Link(stringResource(Res.string.word_wiktionary_open, state.title), linkStyle) { onOpenUrl(state.url) }
-            is WiktionaryUiState.NotFound -> Link(stringResource(Res.string.word_wiktionary_not_found), linkStyle) { onOpenUrl(state.searchUrl) }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Fact(label = stringResource(Res.string.word_language), value = result.language)
+        if (result.senses.isEmpty()) {
+            BasicText(
+                text = stringResource(Res.string.word_no_senses),
+                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp),
+            )
+        }
+        for (sense in result.senses) Sense(sense)
+        Column {
+            BasicText(
+                text = stringResource(Res.string.word_wiktionary_title),
+                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 13.sp, lineHeight = 18.sp),
+            )
+            Link(text = stringResource(Res.string.word_wiktionary_open, result.title), onClick = { onOpenUrl(result.url) })
         }
     }
 }
 
+/** A part of speech: for a form of another word how it is formed, then the first meanings. */
 @Composable
-private fun Link(text: String, style: TextStyle, onClick: () -> Unit) {
-    Box(modifier = Modifier.heightIn(min = 48.dp).clickable(onClick = onClick), contentAlignment = Alignment.CenterStart) {
-        BasicText(text = text, style = style)
+private fun Sense(sense: WiktionarySense) {
+    val theme = AppTheme.current
+    val textStyle = TextStyle(color = theme.onSurface, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp)
+    Column {
+        BasicText(
+            text = sense.partOfSpeech.lowercase(),
+            style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 13.sp, lineHeight = 18.sp),
+        )
+        if (sense.lemma != null) {
+            BasicText(
+                text = if (sense.formText != null) stringResource(Res.string.word_form_of, sense.formText, sense.lemma) else sense.lemma,
+                style = textStyle.copy(fontWeight = FontWeight.Medium),
+            )
+        }
+        for (gloss in sense.glosses) BasicText(text = "• $gloss", style = textStyle)
     }
 }
 
@@ -116,22 +135,45 @@ private fun Fact(label: String, value: String) {
     }
 }
 
+@Composable
+private fun Link(text: String, onClick: () -> Unit) {
+    val theme = AppTheme.current
+    Box(modifier = Modifier.heightIn(min = 48.dp).clickable(onClick = onClick), contentAlignment = Alignment.CenterStart) {
+        BasicText(
+            text = text,
+            style = TextStyle(
+                color = theme.primary,
+                fontFamily = theme.fontFamily,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                textDecoration = TextDecoration.Underline,
+            ),
+        )
+    }
+}
+
 /** For Android Studio while building the sheet. */
 @Preview
 @Composable
 private fun Preview() {
     AppTheme {
         WordSheetContent(
-            word = WordAnnotation(
-                surface = "voy",
-                language = "Spanish",
-                lemma = "ir",
-                partOfSpeech = "verb",
-                morphology = "present indicative, 1st person singular",
-                meaning = "I go",
-                cognates = listOf("evade", "invade"),
+            word = "voy",
+            wiktionary = WiktionaryUiState.Found(
+                WiktionaryResult(
+                    title = "voy",
+                    language = "Spanish",
+                    url = "https://en.wiktionary.org/wiki/voy#Spanish",
+                    senses = listOf(
+                        WiktionarySense(
+                            partOfSpeech = "Verb",
+                            formText = "first-person singular present indicative",
+                            lemma = "ir",
+                            glosses = listOf("to go", "to come"),
+                        ),
+                    ),
+                ),
             ),
-            wiktionary = WiktionaryUiState.Found("voy", "https://en.wiktionary.org/wiki/voy#Spanish"),
             onOpenUrl = {},
             modifier = Modifier.padding(16.dp),
         )

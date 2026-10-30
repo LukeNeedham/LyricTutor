@@ -2,67 +2,108 @@ package com.lukeneedham.lyrictutor.data.wiktionary
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class WiktionaryProtocolTest {
 
-    // The shape of the answer of action=parse&prop=sections of the MediaWiki API
-    private val answer = """
-        {"parse":{"title":"voy","pageid":123,"sections":[
-        {"toclevel":1,"level":"2","line":"Spanish","number":"1","index":"1","fromtitle":"voy","byteoffset":10,"anchor":"Spanish"},
-        {"toclevel":2,"level":"3","line":"Etymology","number":"1.1","index":"2","fromtitle":"voy","byteoffset":20,"anchor":"Etymology"},
-        {"toclevel":1,"level":"2","line":"Galician","number":"2","index":"3","fromtitle":"voy","byteoffset":30,"anchor":"Galician"}]}}
+    // Shortened answers of the REST page/definition endpoint, as it answers for "voy", "gewoon" and "pa'"
+    private val voy = """
+        {"other":[{"partOfSpeech":"Verb","language":"Middle French","definitions":[{"definition":"<span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#first_person\" title=\"Appendix:Glossary\">first-person</a> <a href=\"/wiki/Appendix:Glossary#singular_number\" title=\"Appendix:Glossary\">singular</a> <a href=\"/wiki/Appendix:Glossary#present_tense\" title=\"Appendix:Glossary\">present</a> <a href=\"/wiki/Appendix:Glossary#indicative_mood\" title=\"Appendix:Glossary\">indicative</a> of <span class=\"form-of-definition-link\"><i class=\"Latn mention\" lang=\"frm\"><a href=\"/wiki/veoir#Middle_French\" title=\"veoir\">veoir</a></i></span></span>"}]}],
+        "es":[{"partOfSpeech":"Verb","language":"Spanish","definitions":[{"definition":"<span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#first_person\" title=\"Appendix:Glossary\">first-person</a> <a href=\"/wiki/Appendix:Glossary#singular_number\" title=\"Appendix:Glossary\">singular</a> <a href=\"/wiki/Appendix:Glossary#present_tense\" title=\"Appendix:Glossary\">present</a> <a href=\"/wiki/Appendix:Glossary#indicative_mood\" title=\"Appendix:Glossary\">indicative</a> of <span class=\"form-of-definition-link\"><i class=\"Latn mention\" lang=\"es\"><a href=\"/wiki/ir#Spanish\" title=\"ir\">ir</a></i></span></span>"}]}]}
+    """.trimIndent().replace("\n", "")
+
+    private val gewoon = """
+        {"af":[{"partOfSpeech":"Adjective","language":"Afrikaans","definitions":[{"definition":"<a href=\"/wiki/usual\" title=\"usual\">usual</a>, <a href=\"/wiki/ordinary\" title=\"ordinary\">ordinary</a>"}]}],
+        "nl":[{"partOfSpeech":"Adjective","language":"Dutch","definitions":[
+        {"definition":"<a href=\"/wiki/regular\" title=\"regular\">regular</a>, <a href=\"/wiki/ordinary\" title=\"ordinary\">ordinary</a>, <a href=\"/wiki/usual\" title=\"usual\">usual</a>","examples":["Dit is maar een <b>gewone</b> postzegel."]},
+        {"definition":"<a href=\"/wiki/normal\" title=\"normal\">normal</a>, <a href=\"/wiki/common\" title=\"common\">common</a>"},
+        {"definition":"<a href=\"/wiki/wont\" title=\"wont\">wont</a>, having a certain <a href=\"/wiki/habit\" title=\"habit\">habit</a> <style data-mw-deduplicate=\"TemplateStyles:r90144471\">.mw-parser-output .object-usage-tag{font-style:italic}</style><span>[</span><i>with</i><span> </span><b class=\"Latn\" lang=\"nl\"><a href=\"/wiki/om#Dutch\" title=\"om\">om</a></b><span> </span><small>‘to’</small><span>]</span>"}]},
+        {"partOfSpeech":"Adverb","language":"Dutch","definitions":[{"definition":"<a href=\"/wiki/simply\" title=\"simply\">simply</a>, <a href=\"/wiki/just\" title=\"just\">just</a>"}]}]}
+    """.trimIndent().replace("\n", "")
+
+    private val pa = """
+        {"other":[{"partOfSpeech":"Preposition","language":"Sassarese","definitions":[{"definition":"<span class=\"Latn\" lang=\"en\"><a href=\"/wiki/for#English\" title=\"for\">for</a></span>"}]}],
+        "es":[{"partOfSpeech":"Preposition","language":"Spanish","definitions":[{"definition":"<span class=\"usage-label-sense\"></span> <span class=\"form-of-definition use-with-mention\"><a href=\"/wiki/Appendix:Glossary#apocopic\" title=\"Appendix:Glossary\">apocopic</a> form of <span class=\"form-of-definition-link\"><i class=\"Latn mention\" lang=\"es\"><a href=\"/wiki/para#Spanish\" title=\"para\">para</a></i></span></span><link rel=\"mw:PageProp/Category\" href=\"./Category:Spanish_apocopic_forms#PA'\">"}]}]}
     """.trimIndent().replace("\n", "")
 
     @Test
-    fun readsThePageAndItsSections() {
-        val page = assertNotNull(WiktionaryProtocol.parsePage(answer))
-        assertEquals("voy", page.title)
-        assertEquals(listOf("Spanish", "Etymology", "Galician"), page.sections.map { it.line })
-        assertEquals(listOf(2, 3, 2), page.sections.map { it.level })
+    fun readsTheEntriesOfEveryLanguage() {
+        assertEquals(listOf("Middle French", "Spanish"), WiktionaryProtocol.parseEntries(voy).map { it.language })
+        assertEquals(listOf("Afrikaans", "Dutch", "Dutch"), WiktionaryProtocol.parseEntries(gewoon).map { it.language })
+        assertEquals(emptyList(), WiktionaryProtocol.parseEntries("not json"))
+        assertEquals(emptyList(), WiktionaryProtocol.parseEntries("""{"type":"not_found"}"""))
     }
 
     @Test
-    fun aPageThatDoesNotExistIsNull() {
-        val missing = """{"error":{"code":"missingtitle","info":"The page you specified doesn't exist.","*":"..."}}"""
-        assertNull(WiktionaryProtocol.parsePage(missing))
-        assertNull(WiktionaryProtocol.parsePage("not json"))
+    fun picksTheEntriesOfTheLanguageOfTheWord() {
+        val entries = WiktionaryProtocol.parseEntries(voy)
+        assertEquals(listOf("Spanish"), WiktionaryProtocol.entriesFor(entries, "Spanish").map { it.language })
+        assertEquals(listOf("Spanish"), WiktionaryProtocol.entriesFor(entries, " spanish ").map { it.language })
+        // A language the page does not have, and several that it does: nothing to choose
+        assertEquals(emptyList(), WiktionaryProtocol.entriesFor(entries, "Dutch"))
+        assertEquals(emptyList(), WiktionaryProtocol.entriesFor(entries, null))
     }
 
     @Test
-    fun findsTheSectionOfALanguageOnlyAtLevelTwo() {
-        val page = assertNotNull(WiktionaryProtocol.parsePage(answer))
-        assertEquals("Spanish", WiktionaryProtocol.languageAnchor(page, "Spanish"))
-        assertEquals("Galician", WiktionaryProtocol.languageAnchor(page, " galician "))
-        assertNull(WiktionaryProtocol.languageAnchor(page, "Dutch"))
-        assertNull(WiktionaryProtocol.languageAnchor(page, "Etymology"))
-        assertNull(WiktionaryProtocol.languageAnchor(page, null))
+    fun aPageWithOneLanguageIsReadWhateverTheLanguageGiven() {
+        val entries = WiktionaryProtocol.parseEntries("""{"es":[{"partOfSpeech":"Noun","language":"Spanish","definitions":[{"definition":"x"}]}]}""")
+        assertEquals(1, WiktionaryProtocol.entriesFor(entries, "Dutch").size)
+        assertEquals(1, WiktionaryProtocol.entriesFor(entries, null).size)
     }
 
     @Test
-    fun triesTheWordAsWrittenBeforeTheDictionaryForm() {
-        assertEquals(listOf("Voy", "voy", "ir"), WiktionaryProtocol.candidates("Voy,", "ir"))
-        assertEquals(listOf("voy", "ir"), WiktionaryProtocol.candidates("(voy)", "ir"))
+    fun readsTheFormAndTheDictionaryFormOfAnInflectedWord() {
+        val spanish = WiktionaryProtocol.entriesFor(WiktionaryProtocol.parseEntries(voy), "Spanish")
+        val sense = WiktionaryProtocol.senses(spanish).single()
+        assertEquals("Verb", sense.partOfSpeech)
+        assertEquals("first-person singular present indicative", sense.formText)
+        assertEquals("ir", sense.lemma)
+        assertTrue(sense.glosses.isEmpty())
     }
 
     @Test
-    fun keepsAnApostropheInAnElidedWord() {
-        assertEquals(listOf("pa'", "para"), WiktionaryProtocol.candidates("pa'", "para"))
-        assertEquals(listOf("pa'"), WiktionaryProtocol.candidates("pa’", null))
+    fun readsAnElidedWordAsAFormOfTheFullWord() {
+        val spanish = WiktionaryProtocol.entriesFor(WiktionaryProtocol.parseEntries(pa), "Spanish")
+        val sense = WiktionaryProtocol.senses(spanish).single()
+        assertEquals("apocopic form", sense.formText)
+        assertEquals("para", sense.lemma)
     }
 
     @Test
-    fun dropsEmptyAndRepeatedCandidates() {
-        assertEquals(emptyList(), WiktionaryProtocol.candidates("...", null))
-        assertEquals(listOf("ir"), WiktionaryProtocol.candidates("ir", "ir"))
+    fun readsTheMeaningsOfADictionaryForm() {
+        val dutch = WiktionaryProtocol.entriesFor(WiktionaryProtocol.parseEntries(gewoon), "Dutch")
+        val senses = WiktionaryProtocol.senses(dutch)
+        assertEquals(listOf("Adjective", "Adverb"), senses.map { it.partOfSpeech })
+        assertNull(senses[0].lemma)
+        assertNull(senses[0].formText)
+        assertEquals(
+            listOf("regular, ordinary, usual", "normal, common", "wont, having a certain habit [with om ‘to’]"),
+            senses[0].glosses,
+        )
+        assertEquals(listOf("simply, just"), senses[1].glosses)
+    }
+
+    @Test
+    fun takesHtmlToPlainText() {
+        assertEquals("a & b < c", WiktionaryProtocol.toPlainText("<b>a</b>  &amp; b &lt; <style>.x{}</style>c"))
+        assertEquals("it's", WiktionaryProtocol.toPlainText("it&#39;s"))
+        assertEquals("it's", WiktionaryProtocol.toPlainText("it&#x27;s"))
+    }
+
+    @Test
+    fun triesTheWordAsWrittenThenInLowerCase() {
+        assertEquals(listOf("Voy", "voy"), WiktionaryProtocol.candidates("Voy,"))
+        assertEquals(listOf("voy"), WiktionaryProtocol.candidates("(voy)"))
+        assertEquals(listOf("pa'"), WiktionaryProtocol.candidates("pa’"))
+        assertEquals(emptyList(), WiktionaryProtocol.candidates("..."))
     }
 
     @Test
     fun buildsLinks() {
         assertEquals("https://en.wiktionary.org/wiki/voy#Spanish", WiktionaryProtocol.pageUrl("voy", "Spanish"))
         assertEquals("https://en.wiktionary.org/wiki/voy", WiktionaryProtocol.pageUrl("voy"))
-        assertEquals("https://en.wiktionary.org/wiki/Si_me_voy", WiktionaryProtocol.pageUrl("Si me voy"))
+        assertEquals("https://en.wiktionary.org/wiki/dos_mil#Middle_French", WiktionaryProtocol.pageUrl("dos mil", "Middle French"))
         assertEquals("https://en.wiktionary.org/w/index.php?search=voy", WiktionaryProtocol.searchUrl("voy"))
     }
 }

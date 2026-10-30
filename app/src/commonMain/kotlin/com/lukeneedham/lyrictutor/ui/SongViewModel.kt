@@ -61,17 +61,16 @@ class SongViewModel(
     }
 
     fun onWordClick(selected: SelectedWord) {
-        val word = selected.word
         wiktionaryJob?.cancel()
-        val key = "${word.language}|${word.surface.lowercase()}|${word.lemma}"
+        val key = "${selected.language}|${selected.surface.lowercase()}"
         val known = wiktionaryCache[key]
         updateLoaded { it.copy(selectedWord = selected, wiktionary = known ?: WiktionaryUiState.Loading) }
         if (known != null) return
         wiktionaryJob = viewModelScope.launch {
-            val state = wiktionaryLookup.find(word).fold(
-                onSuccess = { entry ->
-                    if (entry != null) WiktionaryUiState.Found(entry.title, entry.url)
-                    else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(word.surface))
+            val state = wiktionaryLookup.find(selected.surface, selected.language).fold(
+                onSuccess = { result ->
+                    if (result != null) WiktionaryUiState.Found(result)
+                    else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(selected.surface))
                 },
                 onFailure = { WiktionaryUiState.Error },
             )

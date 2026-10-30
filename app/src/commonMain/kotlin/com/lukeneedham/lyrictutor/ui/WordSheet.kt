@@ -26,12 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
-import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 
 /** The container of the word sheet: a scrim and a surface at the bottom. Its content is [WordSheetContent]. */
 @Composable
-internal fun WordSheet(word: WordAnnotation?, wiktionary: WiktionaryUiState, onOpenUrl: (String) -> Unit, onHeightChange: (Int) -> Unit, onDismiss: () -> Unit) {
+internal fun WordSheet(word: String?, wiktionary: WiktionaryUiState, onOpenUrl: (String) -> Unit, onHeightChange: (Int) -> Unit, onDismiss: () -> Unit) {
     val theme = AppTheme.current
     // The last word stays on screen while the sheet slides away
     var shown by remember { mutableStateOf(word) }

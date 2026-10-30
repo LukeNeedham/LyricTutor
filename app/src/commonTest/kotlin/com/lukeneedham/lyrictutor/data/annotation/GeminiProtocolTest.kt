@@ -21,11 +21,11 @@ class GeminiProtocolTest {
 
     @Test
     fun thePromptHasTheSongAndTheNumberedLines() {
-        val prompt = GeminiProtocol.prompt(track, listOf(AnnotationLine(0, "Si me voy"), AnnotationLine(7, "pa' ti")))
+        val prompt = GeminiProtocol.prompt(track, listOf(AnnotationLine(0, "primera linea"), AnnotationLine(7, "otra linea")))
         assertTrue("Si Me Voy (with The Marías)" in prompt)
         assertTrue("Cuco, The Marías" in prompt)
-        assertTrue("0: Si me voy" in prompt)
-        assertTrue("7: pa' ti" in prompt)
+        assertTrue("0: primera linea" in prompt)
+        assertTrue("7: otra linea" in prompt)
     }
 
     @Test
@@ -46,23 +46,39 @@ class GeminiProtocolTest {
 
     // The text of the first candidate holds the JSON that the schema asked for
     private val answer = """
-        {"candidates":[{"content":{"parts":[{"text":"{\"lines\":[{\"index\":0,\"translation\":\"If I go\",\"words\":[
-        {\"surface\":\"voy\",\"language\":\"es\",\"lemma\":\"ir\",\"partOfSpeech\":\"verb\",\"morphology\":\"present, 1st person singular\",
-        \"meaning\":\"I go\",\"note\":null,\"cognates\":[\"evade\"]},
-        {\"surface\":\"me\"}]}]}"}]},"finishReason":"STOP"}],"usageMetadata":{"totalTokenCount":10}}
+        {"candidates":[{"content":{"parts":[{"text":"{\"lines\":[{\"index\":0,\"translation\":\"One two\",\"language\":\"Spanish\",
+        \"otherLanguages\":[{\"word\":\"hey\",\"language\":\"English\"}]},{\"index\":1,\"translation\":\"Three\"}]}"}]},
+        "finishReason":"STOP"}],"usageMetadata":{"totalTokenCount":10}}
     """.trimIndent().replace("\n", "")
 
     @Test
     fun readsTheAnnotationsOfAnAnswer() {
         val lines = GeminiProtocol.parseResponse(answer).getOrThrow()
-        assertEquals(1, lines.size)
-        assertEquals("If I go", lines[0].translation)
-        val voy = lines[0].words[0]
-        assertEquals("ir", voy.lemma)
-        assertNull(voy.note)
-        assertEquals(listOf("evade"), voy.cognates)
-        // Only the surface is required
-        assertEquals(WordAnnotation(surface = "me"), lines[0].words[1])
+        assertEquals(2, lines.size)
+        assertEquals("One two", lines[0].translation)
+        assertEquals("Spanish", lines[0].language)
+        assertEquals(listOf(WordLanguage("hey", "English")), lines[0].otherLanguages)
+        assertTrue(lines[0].isComplete)
+        // The language and the other languages may be missing: the line is then not complete
+        assertEquals(LineAnnotation(index = 1, translation = "Three"), lines[1])
+        assertTrue(!lines[1].isComplete)
+    }
+
+    @Test
+    fun theLanguageOfAWordIsThatOfTheLineUnlessAnotherWasGiven() {
+        val line = LineAnnotation(0, "x", "Spanish", listOf(WordLanguage("Hey,", "English")))
+        assertEquals("English", line.languageOf("hey"))
+        assertEquals("Spanish", line.languageOf("dos"))
+        assertNull(LineAnnotation(0, "x").languageOf("dos"))
+    }
+
+    @Test
+    fun theRequestAsksForNoWordByWord() {
+        val prompt = GeminiProtocol.prompt(track, listOf(AnnotationLine(0, "hola")))
+        assertTrue("lemma" !in prompt && "etymology" !in prompt && "cognates" !in prompt)
+        val schema = GeminiProtocol.requestBody(track, listOf(AnnotationLine(0, "hola"))).toString()
+        assertTrue("otherLanguages" in schema)
+        assertTrue("partOfSpeech" !in schema)
     }
 
     @Test

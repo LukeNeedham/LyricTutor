@@ -3,14 +3,17 @@ package com.lukeneedham.lyrictutor.screenshot
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
-import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryResult
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import com.lukeneedham.lyrictutor.ui.LyricsUiState
+import com.lukeneedham.lyrictutor.ui.SelectedWord
 import com.lukeneedham.lyrictutor.ui.SongPageContent
 import com.lukeneedham.lyrictutor.ui.SongUiState
+import com.lukeneedham.lyrictutor.ui.WiktionaryUiState
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 
 /** Rendered by CI to docs/screenshots/<position in order.txt>-SongPage.png. */
@@ -28,25 +31,30 @@ private fun SongPageScreenshot() {
     )
     val lyrics = Lyrics(
         lines = listOf(
-            LyricLine("Si me voy, me voy contigo"),
-            LyricLine("Y si me quedo, me quedo contigo"),
-            LyricLine("Voy a quedarme contigo"),
+            LyricLine("Uno dos tres cuatro"),
+            LyricLine("Cinco seis siete ocho"),
+            LyricLine("Nueve diez once doce"),
         ),
         source = LyricsSourceKind.Lrclib,
     )
     val annotations = mapOf(
-        0 to LineAnnotation(
-            index = 0,
-            translation = "If I go, I go with you",
-            words = listOf(
-                WordAnnotation(surface = "voy", lemma = "ir", meaning = "I go"),
-                WordAnnotation(surface = "contigo", lemma = "contigo", meaning = "with you"),
-            ),
-        ),
-        1 to LineAnnotation(index = 1, translation = "And if I stay, I stay with you"),
-        2 to LineAnnotation(index = 2, translation = "I am going to stay with you"),
+        0 to LineAnnotation(index = 0, translation = "One two three four", language = "Spanish"),
+        1 to LineAnnotation(index = 1, translation = "Five six seven eight", language = "Spanish"),
+        2 to LineAnnotation(index = 2, translation = "Nine ten eleven twelve", language = "Spanish"),
     )
-    val state = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Found(lyrics), annotations = annotations)
+    val result = WiktionaryResult(
+        title = "dos",
+        language = "Spanish",
+        url = "https://en.wiktionary.org/wiki/dos#Spanish",
+        senses = listOf(WiktionarySense(partOfSpeech = "Numeral", formText = null, lemma = null, glosses = listOf("two"))),
+    )
+    val state = SongUiState.Loaded(
+        track = track,
+        lyrics = LyricsUiState.Found(lyrics),
+        annotations = annotations,
+        selectedWord = SelectedWord(surface = "dos", language = "Spanish", lineIndex = 0, tokenIndex = 1),
+        wiktionary = WiktionaryUiState.Found(result),
+    )
     AppTheme {
         SongPageContent(
             state = state,

@@ -23,21 +23,13 @@ object GeminiProtocol {
 
     fun prompt(song: TrackInfo, lines: List<AnnotationLine>): String = buildString {
         appendLine("You are a language tutor. The user is learning from the lyrics of the song \"${song.title}\" by ${song.artists.joinToString(", ")}.")
-        appendLine("For each numbered lyric line below, give an English translation and an explanation of each word of the line.")
+        appendLine("For each numbered lyric line below, give its English translation and its language.")
         appendLine()
         appendLine("Rules:")
-        appendLine("- Detect the language of each word yourself. Songs mix languages, so never assume one language for the whole song.")
-        appendLine("- Give every word of the line, in order, as written in the line (\"surface\"), one entry per word. Leave out nothing but punctuation. Never repeat a word's entry.")
-        appendLine("- Always fill \"language\", \"lemma\", \"partOfSpeech\" and \"meaning\" of every word, also for little words like \"het\", \"en\" or \"me\".")
-        appendLine("- Every text is very short. Never list alternatives, never repeat yourself, never write more than the limit below.")
-        appendLine("- \"translation\": the natural English meaning of the whole line.")
-        appendLine("- \"language\": the English name of the language of this word, for example \"Spanish\" or \"Dutch\".")
-        appendLine("- \"lemma\": the dictionary form, one word. \"partOfSpeech\": one word, like noun, verb, adjective, article or pronoun.")
-        appendLine("- \"morphology\": at most 8 words saying how this one word is formed, for example \"present indicative, 1st person singular\" for a verb or \"feminine plural\" for a noun. Use null only for a word that is never inflected, like an adverb or a preposition.")
-        appendLine("- \"meaning\": at most 5 English words: what the word means in this line.")
-        appendLine("- \"note\": at most 15 words on slang, an idiom or an elision (for example \"pa'\" is \"para\"). Use null when there is nothing to say.")
-        appendLine("- \"cognates\": at most 3 English words with the same root, to help remember the word. Use an empty list when there are none, and give only cognates you are sure of.")
-        appendLine("- Answer for every line, with the same \"index\" as the line.")
+        appendLine("- \"translation\": the natural English meaning of the whole line. If the line is already English, repeat it.")
+        appendLine("- \"language\": the English name of the language of the line, for example \"Spanish\" or \"Dutch\". Songs mix languages, so decide for each line.")
+        appendLine("- \"otherLanguages\": the words of the line that are in another language than the line, each with its language, for example a word of English in a Spanish line. Use an empty list when the whole line is in one language.")
+        appendLine("- Answer for every line, with the same \"index\" as the line, and never explain anything else.")
         appendLine()
         appendLine("Lines:")
         lines.forEach { appendLine("${it.index}: ${it.text}") }
@@ -72,45 +64,31 @@ object GeminiProtocol {
     }
 
     private fun responseSchema(): JsonElement {
-        fun string(nullable: Boolean = false) = buildJsonObject {
-            put("type", "STRING")
-            if (nullable) put("nullable", true)
-        }
+        fun string() = buildJsonObject { put("type", "STRING") }
 
-        val word = buildJsonObject {
+        val otherLanguage = buildJsonObject {
             put("type", "OBJECT")
             putJsonObject("properties") {
-                put("surface", string())
+                put("word", string())
                 put("language", string())
-                put("lemma", string())
-                put("partOfSpeech", string())
-                put("morphology", string(nullable = true))
-                put("meaning", string())
-                put("note", string(nullable = true))
-                putJsonObject("cognates") {
-                    put("type", "ARRAY")
-                    put("items", string())
-                }
             }
-            // Everything but the note is required: left optional, a smaller model leaves most of it out
-            put(
-                "required",
-                buildJsonArray {
-                    listOf("surface", "language", "lemma", "partOfSpeech", "morphology", "meaning", "cognates").forEach { add(JsonPrimitive(it)) }
-                },
-            )
+            put("required", buildJsonArray { add(JsonPrimitive("word")); add(JsonPrimitive("language")) })
         }
         val line = buildJsonObject {
             put("type", "OBJECT")
             putJsonObject("properties") {
                 putJsonObject("index") { put("type", "INTEGER") }
                 put("translation", string())
-                putJsonObject("words") {
+                put("language", string())
+                putJsonObject("otherLanguages") {
                     put("type", "ARRAY")
-                    put("items", word)
+                    put("items", otherLanguage)
                 }
             }
-            put("required", buildJsonArray { add(JsonPrimitive("index")); add(JsonPrimitive("translation")); add(JsonPrimitive("words")) })
+            put(
+                "required",
+                buildJsonArray { listOf("index", "translation", "language", "otherLanguages").forEach { add(JsonPrimitive(it)) } },
+            )
         }
         return buildJsonObject {
             put("type", "OBJECT")
@@ -123,16 +101,6 @@ object GeminiProtocol {
             put("required", JsonArray(listOf(JsonPrimitive("lines"))))
         }
     }
-
-    /** The message of an error answer (`{"error":{"message":"..."}}`), or null when the body is not one. */
-    fun errorMessage(body: String): String? = try {
-        json.decodeFromString(ErrorResponse.serializer(), body).error?.message
-    } catch (e: IllegalArgumentException) {
-        null
-    }
-
-    /** Whether the body of a 429 answer says that a limit per day was hit (it names the quota, for example "...PerDay...limit exceeded"). */
-    fun isDailyQuota(body: String): Boolean = body.contains("PerDay", ignoreCase = true) || body.contains("per day", ignoreCase = true)
 
     /** The tokens an answer used, or null when the answer does not say. */
     fun parseUsage(body: String): TokenUsage? = try {
