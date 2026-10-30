@@ -12,6 +12,6 @@ import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 private fun SettingsPageScreenshot() {
     val state = SettingsUiState(isDebugEnabled = true, apiKey = "AIzaSyExampleKey", model = "gemini-3.8-flash")
     AppTheme {
-        SettingsPageContent(state = state, onApiKeyChange = {}, onModelChange = {}, onSave = {}, onOpenDebug = {})
+        SettingsPageContent(state = state, onApiKeyChange = {}, onModelChange = {}, onShowModels = {}, onPickModel = {}, onSave = {}, onOpenDebug = {})
     }
 }

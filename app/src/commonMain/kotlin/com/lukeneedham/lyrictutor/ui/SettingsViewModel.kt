@@ -2,6 +2,8 @@ package com.lukeneedham.lyrictutor.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
+import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.settings.AiSettings
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +15,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     isDebugEnabled: Boolean,
     private val settingsStore: SettingsStore,
+    private val modelCatalog: ModelCatalog,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState(isDebugEnabled = isDebugEnabled))
@@ -28,6 +31,26 @@ class SettingsViewModel(
     fun onApiKeyChange(apiKey: String) = _uiState.update { it.copy(apiKey = apiKey, isSaved = false) }
 
     fun onModelChange(model: String) = _uiState.update { it.copy(model = model, isSaved = false) }
+
+    /** Takes a model of the list: it is only kept when the user saves, like the other edits. */
+    fun onPickModel(model: String) = _uiState.update { it.copy(model = model, isSaved = false, models = ModelListUiState.Idle) }
+
+    fun onShowModels() {
+        _uiState.update { it.copy(models = ModelListUiState.Loading) }
+        viewModelScope.launch {
+            val models = modelCatalog.list(_uiState.value.apiKey.trim()).fold(
+                onSuccess = { ModelListUiState.Loaded(it) },
+                onFailure = {
+                    when (it) {
+                        is AnnotationException.MissingKey -> ModelListUiState.MissingKey
+                        is AnnotationException.InvalidKey -> ModelListUiState.InvalidKey
+                        else -> ModelListUiState.Failed
+                    }
+                },
+            )
+            _uiState.update { it.copy(models = models) }
+        }
+    }
 
     fun onSave() {
         val state = _uiState.value

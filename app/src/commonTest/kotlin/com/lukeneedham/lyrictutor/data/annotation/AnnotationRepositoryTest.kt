@@ -34,6 +34,7 @@ class AnnotationRepositoryTest {
         override suspend fun getLyrics(trackId: String): Lyrics? = null
         override suspend fun saveLyrics(trackId: String, lyrics: Lyrics) = Unit
         override suspend fun getAnnotations(trackId: String) = annotations.values.toList()
+        override suspend fun deleteAnnotations(trackId: String) { annotations.clear() }
         override suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>) {
             annotations.forEach { this.annotations[it.index] = it }
         }

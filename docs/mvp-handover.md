@@ -1,7 +1,7 @@
 # LyricTutor: MVP handover
 
 Read this first. It is the plan and the state of the app, written when the repo was set up, for the session that builds the MVP.
-Nothing of the product exists yet except the skeleton ([section 3](#3-what-exists-now)). Everything marked **verified** was checked
+Steps 0 to 3 of [section 10](#10-delivery-plan) are built and merged (state on 2026-10-30); section 3 describes the skeleton the app started from. Everything marked **verified** was checked
 (by running something or reading CI); everything marked **unverified** is a claim from a search or from memory, and is to be tested
 before it is relied on.
 
@@ -40,7 +40,7 @@ Example: a Spanish song gives the Spanish lyrics; tapping a conjugated verb show
 |---|---|---|
 | 1 | Spotify account access (liked songs, playlists) | **Not in the MVP.** Input is a Spotify link. Account access is a later, separate feature behind a `TrackSource` interface |
 | 2 | Lyrics source | **LRCLIB** (free, no key, line-timed lyrics), with a paste-lyrics fallback |
-| 3 | AI provider | **Gemini** first (free tier, personal Google account). The code is provider-neutral so Claude can be added |
+| 3 | AI provider | **Gemini** first (free tier, personal Google account). The code is provider-neutral (`LyricsAnnotator`), but **no other provider is planned**: a Claude implementation was considered and dropped |
 | 4 | Languages | **Generic**: no language-specific logic. English is the target language |
 | 5 | Wiktionary grounding of conjugation and etymology | **Later** (after the MVP flow works) |
 | 6 | The shared library's debug pages | **Included** (already in the skeleton) |
@@ -209,7 +209,7 @@ grounding exists, **the UI marks them as AI-generated**.
 - **Batch the lines** of a song into few requests, and **cache** by song and by lemma, so repeated words and songs cost nothing.
 - **The key is the user's**, entered in the Settings page (add a field there), stored in DataStore in `androidMain` (private to the app,
   not encrypted: say so on the page). Do not embed a key in the APK.
-- **Provider-neutral**: `LyricsAnnotator` is an interface in `commonMain`; Gemini is the first implementation, Claude the later one.
+- **Provider-neutral**: `LyricsAnnotator` is an interface in `commonMain`; Gemini is the only implementation, and no other is planned.
 
 Output shape for one batch (sketch):
 
@@ -269,11 +269,12 @@ Each step is a PR to `main`, small enough to fix from the CI log alone. Step 0 c
 
 | Step | Contents |
 |---|---|
-| **0. Housekeeping** | Replace the `TODO:` text of `readme.yml`. Draw a real launcher icon. Look at the `main` build in the Actions tab |
-| **1. Track resolver and Home** | `TrackResolver` with parser tests on the fixture of section 6; `HomePage` (a link box, recents); the Share intent; the Song route as a stub; `Route.Home` as the start; a screenshot of Home |
-| **2. Lyrics and the Song page** | The LRCLIB client and cache, the paste fallback, title cleaning; `SongPage` with the cover art, the title and the lyrics by line; screenshot |
-| **3. Annotation with Gemini** | The key field in Settings, `LyricsAnnotator` with Gemini, batching, JSON parsing, the cache; the translation of each line; the word sheet with lemma, morphology, meaning, etymology and cognates (marked AI-generated) |
-| **4. Grounding** | Wiktionary for conjugation and etymology, cached by lemma; the Claude implementation of `LyricsAnnotator` |
+| **0. Housekeeping** (done) | Replace the `TODO:` text of `readme.yml`. Draw a real launcher icon. Look at the `main` build in the Actions tab |
+| **1. Track resolver and Home** (done) | `TrackResolver` with parser tests on the fixture of section 6; `HomePage` (a link box, recents); the Share intent; the Song route as a stub; `Route.Home` as the start; a screenshot of Home |
+| **2. Lyrics and the Song page** (done) | The LRCLIB client and cache, the paste fallback, title cleaning; `SongPage` with the cover art, the title and the lyrics by line; screenshot |
+| **3. Annotation with Gemini** (done) | The key field in Settings (stored encrypted), `LyricsAnnotator` with Gemini, batching, JSON parsing, the cache; the translation of each line; the word sheet with lemma, morphology, meaning and cognates (marked AI-generated), and a link to Wiktionary for where the word comes from, never an AI answer |
+| **3b. Making it dependable** | "Translate again" for a song, the tapped word kept in view above the sheet, a model picker in Settings, the token cost of a song in the logs |
+| **4. Grounding** | Wiktionary for conjugation and forms (the etymology is already a link), cached by lemma. A Claude implementation of `LyricsAnnotator` is **dropped**: not needed |
 | **5. Polish** | Saved vocabulary, timed highlighting while the song plays, more languages' special cases (languages written without spaces), the Spotify account source |
 
 ## 11. Risks and open questions

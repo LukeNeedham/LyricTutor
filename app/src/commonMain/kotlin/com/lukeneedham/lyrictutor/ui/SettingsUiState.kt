@@ -8,4 +8,6 @@ data class SettingsUiState(
     val model: String = "",
     /** Set after a save, until the next edit. */
     val isSaved: Boolean = false,
+    /** The models of the key, once asked for. */
+    val models: ModelListUiState = ModelListUiState.Idle,
 )

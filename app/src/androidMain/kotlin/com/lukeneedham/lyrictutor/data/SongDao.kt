@@ -26,6 +26,9 @@ interface SongDao {
     @Query("SELECT * FROM annotation WHERE trackId = :trackId")
     suspend fun getAnnotations(trackId: String): List<AnnotationEntity>
 
+    @Query("DELETE FROM annotation WHERE trackId = :trackId")
+    suspend fun deleteAnnotations(trackId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAnnotations(annotations: List<AnnotationEntity>)
 }

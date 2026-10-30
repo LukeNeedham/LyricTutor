@@ -2,7 +2,9 @@ package com.lukeneedham.lyrictutor.di
 
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
 import com.lukeneedham.lyrictutor.data.annotation.GeminiAnnotator
+import com.lukeneedham.lyrictutor.data.annotation.GeminiModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.LyricsAnnotator
+import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.lyrics.LrclibLyricsSource
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSource
@@ -36,6 +38,7 @@ val appModule = module {
     single { LyricsRepository(songCache = get(), source = get()) }
 
     single<WiktionaryLookup> { WiktionaryClient(client = get()) }
+    single<ModelCatalog> { GeminiModelCatalog(client = get()) }
     single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
     single { AnnotationRepository(songCache = get(), annotator = get()) }
 
@@ -48,5 +51,5 @@ val appModule = module {
             annotationRepository = get(),
             wiktionaryLookup = get(),
         ) }
-    viewModel { SettingsViewModel(isDebugEnabled = DebugKit.enabled, settingsStore = get()) }
+    viewModel { SettingsViewModel(isDebugEnabled = DebugKit.enabled, settingsStore = get(), modelCatalog = get()) }
 }

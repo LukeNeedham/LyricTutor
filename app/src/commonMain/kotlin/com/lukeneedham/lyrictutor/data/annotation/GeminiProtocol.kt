@@ -134,17 +134,28 @@ object GeminiProtocol {
     /** Whether the body of a 429 answer says that a limit per day was hit (it names the quota, for example "...PerDay...limit exceeded"). */
     fun isDailyQuota(body: String): Boolean = body.contains("PerDay", ignoreCase = true) || body.contains("per day", ignoreCase = true)
 
-    /** The tokens an answer used, for the log, for example "in 812, out 3401, thinking 150": null when the answer does not say. */
-    fun describeUsage(body: String): String? = try {
+    /** The tokens an answer used, or null when the answer does not say. */
+    fun parseUsage(body: String): TokenUsage? = try {
         json.decodeFromString(Response.serializer(), body).usageMetadata?.let { usage ->
-            listOfNotNull(
-                usage.promptTokenCount?.let { "in $it" },
-                usage.candidatesTokenCount?.let { "out $it" },
-                usage.thoughtsTokenCount?.let { "thinking $it" },
-            ).takeIf { it.isNotEmpty() }?.joinToString(", ")
+            TokenUsage(
+                input = usage.promptTokenCount ?: 0,
+                output = usage.candidatesTokenCount ?: 0,
+                thinking = usage.thoughtsTokenCount ?: 0,
+            )
         }
     } catch (e: IllegalArgumentException) {
         null
+    }
+
+    /** The models of a `models` list answer that can answer a prompt (`generateContent`), as the codes to put in the request. */
+    fun parseModels(body: String): List<String> = try {
+        json.decodeFromString(ModelList.serializer(), body).models
+            .filter { "generateContent" in it.supportedGenerationMethods }
+            .map { it.name.removePrefix("models/") }
+            .filter { it.startsWith("gemini") }
+            .sorted()
+    } catch (e: IllegalArgumentException) {
+        emptyList()
     }
 
     /** The annotations in a `generateContent` response body. Fails with [AnnotationException.Failed] when there is no usable answer. */
@@ -162,6 +173,12 @@ object GeminiProtocol {
     } catch (e: IllegalArgumentException) {
         Result.failure(AnnotationException.Failed("Gemini's answer could not be read", e))
     }
+
+    @Serializable
+    private data class ModelList(val models: List<ModelDto> = emptyList())
+
+    @Serializable
+    private data class ModelDto(val name: String = "", val supportedGenerationMethods: List<String> = emptyList())
 
     @Serializable
     private data class ErrorResponse(val error: ErrorBody? = null)

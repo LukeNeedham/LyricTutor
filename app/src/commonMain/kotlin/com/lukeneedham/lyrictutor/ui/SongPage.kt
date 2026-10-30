@@ -20,6 +20,7 @@ fun SongPage(trackId: String, onOpenSettings: () -> Unit) {
         onSavePaste = viewModel::onSavePaste,
         onClosePaste = viewModel::onClosePaste,
         onRetryAnnotations = viewModel::onRetryAnnotations,
+        onTranslateAgain = viewModel::onTranslateAgain,
         onOpenSettings = onOpenSettings,
         onWordClick = viewModel::onWordClick,
         onWordDismiss = viewModel::onWordDismiss,

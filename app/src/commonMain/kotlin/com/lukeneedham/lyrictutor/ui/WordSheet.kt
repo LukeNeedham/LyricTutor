@@ -24,13 +24,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 
 /** The container of the word sheet: a scrim and a surface at the bottom. Its content is [WordSheetContent]. */
 @Composable
-internal fun WordSheet(word: WordAnnotation?, wiktionary: WiktionaryUiState, onOpenUrl: (String) -> Unit, onDismiss: () -> Unit) {
+internal fun WordSheet(word: WordAnnotation?, wiktionary: WiktionaryUiState, onOpenUrl: (String) -> Unit, onHeightChange: (Int) -> Unit, onDismiss: () -> Unit) {
     val theme = AppTheme.current
     // The last word stays on screen while the sheet slides away
     var shown by remember { mutableStateOf(word) }
@@ -55,6 +56,8 @@ internal fun WordSheet(word: WordAnnotation?, wiktionary: WiktionaryUiState, onO
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 520.dp)
+                        // The height is passed on, so that the song can scroll the tapped word above the sheet
+                        .onSizeChanged { onHeightChange(it.height) }
                         .background(theme.surface, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         // Taps on the sheet itself must not reach the scrim
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}

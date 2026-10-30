@@ -13,6 +13,9 @@ class AnnotationRepository(
     private val songCache: SongCache,
     private val annotator: LyricsAnnotator,
 ) {
+    /** Forgets the translations of [track], so that the next [annotate] asks for all of them again. */
+    suspend fun forget(track: TrackInfo) = songCache.deleteAnnotations(track.trackId)
+
     /**
      * Calls [onBatch] with the annotations already on the device, then with each new batch as it arrives.
      * A line that repeats (a chorus) is annotated once and the result is given to every identical line.

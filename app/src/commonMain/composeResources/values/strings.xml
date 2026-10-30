@@ -49,4 +49,11 @@
     <string name="word_wiktionary_error">Could not reach Wiktionary.</string>
     <string name="word_cognates">English words with the same root</string>
     <string name="word_close">Close</string>
+    <string name="settings_models_show">Show the models of this key</string>
+    <string name="settings_models_loading">Getting the models…</string>
+    <string name="settings_models_none">No usable models found for this key.</string>
+    <string name="settings_models_need_key">Enter your API key first.</string>
+    <string name="settings_models_invalid_key">Gemini refused this key.</string>
+    <string name="settings_models_failed">Could not get the models. Check your connection.</string>
+    <string name="song_translate_again">Translate again</string>
 </resources>

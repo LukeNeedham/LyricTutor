@@ -1,7 +1,10 @@
 package com.lukeneedham.lyrictutor
 
+import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
+import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.settings.AiSettings
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
+import com.lukeneedham.lyrictutor.ui.ModelListUiState
 import com.lukeneedham.lyrictutor.ui.SettingsViewModel
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -23,6 +26,14 @@ class SettingsViewModelTest {
         override suspend fun save(settings: AiSettings) { this.settings = settings }
     }
 
+    private class FakeModelCatalog(private val result: Result<List<String>> = Result.success(emptyList())) : ModelCatalog {
+        var asked: String? = null
+        override suspend fun list(apiKey: String): Result<List<String>> {
+            asked = apiKey
+            return result
+        }
+    }
+
     @BeforeTest
     fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -31,14 +42,14 @@ class SettingsViewModelTest {
 
     @Test
     fun theStateSaysWhetherDebuggingIsOn() {
-        assertEquals(true, SettingsViewModel(isDebugEnabled = true, settingsStore = FakeSettingsStore()).uiState.value.isDebugEnabled)
-        assertEquals(false, SettingsViewModel(isDebugEnabled = false, settingsStore = FakeSettingsStore()).uiState.value.isDebugEnabled)
+        assertEquals(true, SettingsViewModel(isDebugEnabled = true, settingsStore = FakeSettingsStore(), modelCatalog = FakeModelCatalog()).uiState.value.isDebugEnabled)
+        assertEquals(false, SettingsViewModel(isDebugEnabled = false, settingsStore = FakeSettingsStore(), modelCatalog = FakeModelCatalog()).uiState.value.isDebugEnabled)
     }
 
     @Test
     fun theStateStartsWithTheSavedSettings() {
         val store = FakeSettingsStore(AiSettings(apiKey = "key", model = "model"))
-        val state = SettingsViewModel(isDebugEnabled = false, settingsStore = store).uiState.value
+        val state = SettingsViewModel(isDebugEnabled = false, settingsStore = store, modelCatalog = FakeModelCatalog()).uiState.value
         assertEquals("key", state.apiKey)
         assertEquals("model", state.model)
     }
@@ -46,12 +57,49 @@ class SettingsViewModelTest {
     @Test
     fun savingTrimsTheTextAndFallsBackToTheDefaultModel() {
         val store = FakeSettingsStore()
-        val viewModel = SettingsViewModel(isDebugEnabled = false, settingsStore = store)
+        val viewModel = SettingsViewModel(isDebugEnabled = false, settingsStore = store, modelCatalog = FakeModelCatalog())
         viewModel.onApiKeyChange("  key \n")
         viewModel.onModelChange("  ")
         viewModel.onSave()
 
         assertEquals(AiSettings(apiKey = "key", model = AiSettings.DEFAULT_MODEL), store.settings)
         assertTrue(viewModel.uiState.value.isSaved)
+    }
+
+    @Test
+    fun theModelsAreAskedForWithTheKeyBeingEdited() {
+        val catalog = FakeModelCatalog(Result.success(listOf("gemini-a", "gemini-b")))
+        val viewModel = SettingsViewModel(isDebugEnabled = false, settingsStore = FakeSettingsStore(), modelCatalog = catalog)
+        viewModel.onApiKeyChange(" key ")
+        viewModel.onShowModels()
+
+        assertEquals("key", catalog.asked)
+        assertEquals(ModelListUiState.Loaded(listOf("gemini-a", "gemini-b")), viewModel.uiState.value.models)
+    }
+
+    @Test
+    fun aMissingOrRefusedKeyIsToldApart() {
+        val missing = SettingsViewModel(false, FakeSettingsStore(), FakeModelCatalog(Result.failure(AnnotationException.MissingKey())))
+        missing.onShowModels()
+        assertEquals(ModelListUiState.MissingKey, missing.uiState.value.models)
+
+        val refused = SettingsViewModel(false, FakeSettingsStore(), FakeModelCatalog(Result.failure(AnnotationException.InvalidKey())))
+        refused.onShowModels()
+        assertEquals(ModelListUiState.InvalidKey, refused.uiState.value.models)
+
+        val broken = SettingsViewModel(false, FakeSettingsStore(), FakeModelCatalog(Result.failure(AnnotationException.Failed("x"))))
+        broken.onShowModels()
+        assertEquals(ModelListUiState.Failed, broken.uiState.value.models)
+    }
+
+    @Test
+    fun pickingAModelFillsTheFieldAndClosesTheList() {
+        val catalog = FakeModelCatalog(Result.success(listOf("gemini-a")))
+        val viewModel = SettingsViewModel(isDebugEnabled = false, settingsStore = FakeSettingsStore(), modelCatalog = catalog)
+        viewModel.onShowModels()
+        viewModel.onPickModel("gemini-a")
+
+        assertEquals("gemini-a", viewModel.uiState.value.model)
+        assertEquals(ModelListUiState.Idle, viewModel.uiState.value.models)
     }
 }

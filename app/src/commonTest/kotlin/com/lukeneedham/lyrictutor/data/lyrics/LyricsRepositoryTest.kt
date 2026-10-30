@@ -32,6 +32,7 @@ class LyricsRepositoryTest {
         override suspend fun getLyrics(trackId: String): Lyrics? = savedLyrics[trackId]
         override suspend fun saveLyrics(trackId: String, lyrics: Lyrics) { savedLyrics[trackId] = lyrics }
         override suspend fun getAnnotations(trackId: String): List<LineAnnotation> = emptyList()
+        override suspend fun deleteAnnotations(trackId: String) = Unit
         override suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>) = Unit
     }
 

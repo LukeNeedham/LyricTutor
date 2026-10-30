@@ -44,6 +44,8 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
     override suspend fun getAnnotations(trackId: String): List<LineAnnotation> =
         dao.getAnnotations(trackId).map { json.decodeFromString(LineAnnotation.serializer(), it.json) }
 
+    override suspend fun deleteAnnotations(trackId: String) = dao.deleteAnnotations(trackId)
+
     override suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>) {
         val now = System.currentTimeMillis()
         dao.insertAnnotations(

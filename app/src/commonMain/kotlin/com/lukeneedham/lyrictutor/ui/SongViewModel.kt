@@ -53,6 +53,13 @@ class SongViewModel(
         annotate(loaded.track, lyrics)
     }
 
+    /** Throws the translations of the song away and asks for them all again: the AI can get a song wrong. */
+    fun onTranslateAgain() {
+        val loaded = _uiState.value as? SongUiState.Loaded ?: return
+        val lyrics = (loaded.lyrics as? LyricsUiState.Found)?.lyrics ?: return
+        annotate(loaded.track, lyrics, forgetFirst = true)
+    }
+
     fun onWordClick(selected: SelectedWord) {
         val word = selected.word
         wiktionaryJob?.cancel()
@@ -121,10 +128,19 @@ class SongViewModel(
         }
     }
 
-    private fun annotate(track: TrackInfo, lyrics: Lyrics) {
+    private fun annotate(track: TrackInfo, lyrics: Lyrics, forgetFirst: Boolean = false) {
         annotationJob?.cancel()
-        updateLoaded { it.copy(annotationStatus = AnnotationStatus.Loading, annotationDetail = null) }
+        updateLoaded {
+            val kept = if (forgetFirst) emptyMap() else it.annotations
+            it.copy(
+                annotations = kept,
+                annotationStatus = AnnotationStatus.Loading,
+                annotationDetail = null,
+                selectedWord = if (forgetFirst) null else it.selectedWord,
+            )
+        }
         annotationJob = viewModelScope.launch {
+            if (forgetFirst) annotationRepository.forget(track)
             val result = annotationRepository.annotate(track, lyrics.lines.map { it.text }) { batch ->
                 updateLoaded { it.copy(annotations = it.annotations + batch.associateBy { annotation -> annotation.index }) }
             }

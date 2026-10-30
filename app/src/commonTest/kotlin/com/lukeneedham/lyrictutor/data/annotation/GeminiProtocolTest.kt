@@ -75,12 +75,33 @@ class GeminiProtocolTest {
     }
 
     @Test
-    fun describesTheTokensOfAnAnswer() {
+    fun readsTheTokensOfAnAnswer() {
         val usage = """{"candidates":[],"usageMetadata":{"promptTokenCount":812,"candidatesTokenCount":3401,"thoughtsTokenCount":150,"totalTokenCount":4363}}"""
-        assertEquals("in 812, out 3401, thinking 150", GeminiProtocol.describeUsage(usage))
-        assertEquals("in 5", GeminiProtocol.describeUsage("""{"usageMetadata":{"promptTokenCount":5}}"""))
-        assertNull(GeminiProtocol.describeUsage("""{"candidates":[]}"""))
-        assertNull(GeminiProtocol.describeUsage("not json"))
+        assertEquals(TokenUsage(input = 812, output = 3401, thinking = 150), GeminiProtocol.parseUsage(usage))
+        assertEquals(TokenUsage(input = 5), GeminiProtocol.parseUsage("""{"usageMetadata":{"promptTokenCount":5}}"""))
+        assertNull(GeminiProtocol.parseUsage("""{"candidates":[]}"""))
+        assertNull(GeminiProtocol.parseUsage("not json"))
+    }
+
+    @Test
+    fun addsTokensAndWritesThemForTheLog() {
+        val total = TokenUsage(1, 2, 3) + TokenUsage(10, 20, 30)
+        assertEquals(TokenUsage(11, 22, 33), total)
+        assertEquals("in 11, out 22, thinking 33", total.toString())
+    }
+
+    @Test
+    fun listsTheModelsThatCanAnswerAPrompt() {
+        val body = """
+            {"models":[
+            {"name":"models/gemini-3.8-flash","supportedGenerationMethods":["generateContent","countTokens"]},
+            {"name":"models/gemini-2.5-flash-lite","supportedGenerationMethods":["generateContent"]},
+            {"name":"models/gemini-embedding-001","supportedGenerationMethods":["embedContent"]},
+            {"name":"models/imagen-4.0","supportedGenerationMethods":["predict"]},
+            {"name":"models/gemma-3-27b","supportedGenerationMethods":["generateContent"]}]}
+        """.trimIndent().replace("\n", "")
+        assertEquals(listOf("gemini-2.5-flash-lite", "gemini-3.8-flash"), GeminiProtocol.parseModels(body))
+        assertEquals(emptyList(), GeminiProtocol.parseModels("not json"))
     }
 
     @Test
