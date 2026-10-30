@@ -26,6 +26,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +37,12 @@ import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_label
 import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note
 import com.lukeneedham.lyrictutor.generated.resources.settings_attribution
 import com.lukeneedham.lyrictutor.generated.resources.settings_model_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_models_failed
+import com.lukeneedham.lyrictutor.generated.resources.settings_models_invalid_key
+import com.lukeneedham.lyrictutor.generated.resources.settings_models_loading
+import com.lukeneedham.lyrictutor.generated.resources.settings_models_need_key
+import com.lukeneedham.lyrictutor.generated.resources.settings_models_none
+import com.lukeneedham.lyrictutor.generated.resources.settings_models_show
 import com.lukeneedham.lyrictutor.generated.resources.settings_save
 import com.lukeneedham.lyrictutor.generated.resources.settings_saved
 import com.lukeneedham.lyrictutor.generated.resources.settings_title
@@ -49,6 +56,8 @@ internal fun SettingsPageContent(
     state: SettingsUiState,
     onApiKeyChange: (String) -> Unit,
     onModelChange: (String) -> Unit,
+    onShowModels: () -> Unit,
+    onPickModel: (String) -> Unit,
     onSave: () -> Unit,
     onOpenDebug: () -> Unit,
 ) {
@@ -94,6 +103,7 @@ internal fun SettingsPageContent(
             value = state.model,
             onValueChange = onModelChange,
         )
+        ModelList(state = state.models, selected = state.model, onShow = onShowModels, onPick = onPickModel)
         BasicText(
             text = stringResource(Res.string.settings_api_key_note),
             style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 14.sp, lineHeight = 20.sp),
@@ -124,6 +134,57 @@ internal fun SettingsPageContent(
         )
         // Draws nothing unless debugging is on, so it stays in the layout for release builds
         if (state.isDebugEnabled) DebugButton(onClick = onOpenDebug)
+    }
+}
+
+/** A button that fetches the models of the key and, once fetched, a row for each: tapping one fills the model field. */
+@Composable
+private fun ModelList(state: ModelListUiState, selected: String, onShow: () -> Unit, onPick: (String) -> Unit) {
+    val theme = AppTheme.current
+    val textStyle = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        when (state) {
+            ModelListUiState.Loading ->
+                BasicText(stringResource(Res.string.settings_models_loading), style = textStyle.copy(color = theme.outline))
+
+            is ModelListUiState.Loaded -> if (state.models.isEmpty()) {
+                BasicText(stringResource(Res.string.settings_models_none), style = textStyle.copy(color = theme.error))
+            } else {
+                for (model in state.models) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (model == selected) theme.primary.copy(alpha = 0.2f) else theme.surface)
+                            .clickable { onPick(model) }
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) { BasicText(text = model, style = textStyle) }
+                }
+            }
+
+            else -> {
+                val problem = when (state) {
+                    ModelListUiState.MissingKey -> Res.string.settings_models_need_key
+                    ModelListUiState.InvalidKey -> Res.string.settings_models_invalid_key
+                    ModelListUiState.Failed -> Res.string.settings_models_failed
+                    else -> null
+                }
+                problem?.let { BasicText(stringResource(it), style = textStyle.copy(color = theme.error)) }
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clickable(onClick = onShow),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    BasicText(
+                        text = stringResource(Res.string.settings_models_show),
+                        style = textStyle.copy(color = theme.primary, textDecoration = TextDecoration.Underline),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -174,6 +235,8 @@ private fun Preview() {
             state = SettingsUiState(isDebugEnabled = true, apiKey = "AIzaSyExampleKey", model = "gemini-3.8-flash"),
             onApiKeyChange = {},
             onModelChange = {},
+            onShowModels = {},
+            onPickModel = {},
             onSave = {},
             onOpenDebug = {},
         )

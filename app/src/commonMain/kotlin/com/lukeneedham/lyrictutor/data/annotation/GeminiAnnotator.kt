@@ -26,6 +26,12 @@ class GeminiAnnotator(
 
     override val providerName = "gemini"
 
+    /** The tokens used for each song since the app started, for the log. */
+    private val totals = mutableMapOf<String, TokenUsage>()
+
+    private fun MutableMap<String, TokenUsage>.merge(trackId: String, usage: TokenUsage): TokenUsage =
+        ((this[trackId] ?: TokenUsage()) + usage).also { this[trackId] = it }
+
     override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
         val settings = settingsStore.load()
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
@@ -57,7 +63,12 @@ class GeminiAnnotator(
                     },
                 )
             }
-            Logger.i("${settings.model} answered in ${mark.elapsedNow()}, tokens: ${GeminiProtocol.describeUsage(text) ?: "not reported"}")
+            val usage = GeminiProtocol.parseUsage(text)
+            val songTotal = usage?.let { totals.merge(song.trackId, it) }
+            Logger.i(
+                "${settings.model} answered in ${mark.elapsedNow()}, tokens: ${usage ?: "not reported"}" +
+                    (songTotal?.let { "; ${song.title} so far: $it" } ?: ""),
+            )
             text
         } catch (e: CancellationException) {
             throw e

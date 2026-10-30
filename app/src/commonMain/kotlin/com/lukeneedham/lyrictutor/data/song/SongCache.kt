@@ -21,6 +21,9 @@ interface SongCache {
 
     suspend fun getAnnotations(trackId: String): List<LineAnnotation>
 
+    /** Forgets the translations of the song, so that the next try asks for them again. */
+    suspend fun deleteAnnotations(trackId: String)
+
     /** Keeps [annotations] of the song, replacing those of the same lines. [provider] says where they came from. */
     suspend fun saveAnnotations(trackId: String, provider: String, annotations: List<LineAnnotation>)
 }

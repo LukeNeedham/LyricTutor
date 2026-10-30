@@ -57,6 +57,7 @@ private fun SongPageScreenshot() {
             onSavePaste = {},
             onClosePaste = {},
             onRetryAnnotations = {},
+            onTranslateAgain = {},
             onOpenSettings = {},
             onWordClick = {},
             onWordDismiss = {},

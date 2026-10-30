@@ -6,6 +6,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,6 +45,8 @@ import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
+import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.annotation_daily_limit
@@ -60,7 +70,9 @@ import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import com.lukeneedham.lyrictutor.generated.resources.song_error_network
 import com.lukeneedham.lyrictutor.generated.resources.song_error_unreadable
 import com.lukeneedham.lyrictutor.generated.resources.song_loading
+import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
 import com.lukeneedham.lyrictutor.generated.resources.song_retry
+import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -76,12 +88,22 @@ internal fun SongPageContent(
     onSavePaste: () -> Unit,
     onClosePaste: () -> Unit,
     onRetryAnnotations: () -> Unit,
+    onTranslateAgain: () -> Unit,
     onOpenSettings: () -> Unit,
     onWordClick: (SelectedWord) -> Unit,
     onWordDismiss: () -> Unit,
 ) {
     val theme = AppTheme.current
     val uriHandler = LocalUriHandler.current
+    var sheetHeightPx by remember { mutableIntStateOf(0) }
+    // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
+    fun playOnSpotify(trackId: String) {
+        try {
+            uriHandler.openUri(SpotifyLinkParser.trackUrl(trackId))
+        } catch (e: Exception) {
+            Logger.e("Could not open the song in Spotify", e)
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -102,64 +124,86 @@ internal fun SongPageContent(
                 Button(text = stringResource(Res.string.song_retry), onClick = onRetry)
             }
 
-            is SongUiState.Loaded -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item { Header(state.track) }
-                when (val lyrics = state.lyrics) {
-                    LyricsUiState.Loading -> item { Message(text = stringResource(Res.string.lyrics_loading)) }
-
-                    is LyricsUiState.Found -> {
-                        if (lyrics.lyrics.source == LyricsSourceKind.Pasted) {
-                            item { Message(text = stringResource(Res.string.lyrics_pasted_note), isSubtle = true) }
-                        }
-                        item {
-                            AnnotationNotice(
-                                status = state.annotationStatus,
-                                detail = state.annotationDetail,
-                                doneLines = state.annotations.size,
-                                totalLines = lyrics.lyrics.lines.size,
-                                onRetry = onRetryAnnotations,
-                                onOpenSettings = onOpenSettings,
-                            )
-                        }
-                        itemsIndexed(lyrics.lyrics.lines) { index, line ->
-                            LyricLineRow(
-                                line = line,
-                                annotation = state.annotations[index],
-                                selectedToken = state.selectedWord?.takeIf { it.lineIndex == index }?.tokenIndex,
-                                onWordClick = { word, token -> onWordClick(SelectedWord(word, lineIndex = index, tokenIndex = token)) },
-                            )
-                        }
+            is SongUiState.Loaded -> {
+                val listState = rememberLazyListState()
+                // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
+                val sheetHeight = if (state.selectedWord != null) sheetHeightPx else 0
+                val firstLineItem = 2 + if ((state.lyrics as? LyricsUiState.Found)?.lyrics?.source == LyricsSourceKind.Pasted) 1 else 0
+                LaunchedEffect(state.selectedWord, sheetHeight) {
+                    val selected = state.selectedWord ?: return@LaunchedEffect
+                    val target = firstLineItem + selected.lineIndex
+                    val layout = listState.layoutInfo
+                    val item = layout.visibleItemsInfo.firstOrNull { it.index == target }
+                    val visibleEnd = layout.viewportEndOffset - sheetHeight
+                    when {
+                        item == null || item.offset < layout.viewportStartOffset -> listState.animateScrollToItem(target)
+                        item.offset + item.size > visibleEnd -> listState.animateScrollBy((item.offset + item.size - visibleEnd).toFloat())
                     }
+                }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + with(LocalDensity.current) { sheetHeight.toDp() }),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item { Header(state.track, onPlay = { playOnSpotify(state.track.trackId) }) }
+                    when (val lyrics = state.lyrics) {
+                        LyricsUiState.Loading -> item { Message(text = stringResource(Res.string.lyrics_loading)) }
 
-                    LyricsUiState.NotFound, LyricsUiState.Error -> item {
-                        MissingLyrics(
-                            isError = lyrics == LyricsUiState.Error,
-                            pasteText = state.pasteText,
-                            onRetryLyrics = onRetryLyrics,
-                            onOpenPaste = onOpenPaste,
-                            onPasteChange = onPasteChange,
-                            onSavePaste = onSavePaste,
-                            onClosePaste = onClosePaste,
-                        )
+                        is LyricsUiState.Found -> {
+                            if (lyrics.lyrics.source == LyricsSourceKind.Pasted) {
+                                item { Message(text = stringResource(Res.string.lyrics_pasted_note), isSubtle = true) }
+                            }
+                            item {
+                                AnnotationNotice(
+                                    status = state.annotationStatus,
+                                    detail = state.annotationDetail,
+                                    doneLines = state.annotations.size,
+                                    totalLines = lyrics.lyrics.lines.size,
+                                    onRetry = onRetryAnnotations,
+                                    onTranslateAgain = onTranslateAgain,
+                                    onOpenSettings = onOpenSettings,
+                                )
+                            }
+                            itemsIndexed(lyrics.lyrics.lines) { index, line ->
+                                LyricLineRow(
+                                    line = line,
+                                    annotation = state.annotations[index],
+                                    selectedToken = state.selectedWord?.takeIf { it.lineIndex == index }?.tokenIndex,
+                                    onWordClick = { word, token -> onWordClick(SelectedWord(word, lineIndex = index, tokenIndex = token)) },
+                                )
+                            }
+                        }
+
+                        LyricsUiState.NotFound, LyricsUiState.Error -> item {
+                            MissingLyrics(
+                                isError = lyrics == LyricsUiState.Error,
+                                pasteText = state.pasteText,
+                                onRetryLyrics = onRetryLyrics,
+                                onOpenPaste = onOpenPaste,
+                                onPasteChange = onPasteChange,
+                                onSavePaste = onSavePaste,
+                                onClosePaste = onClosePaste,
+                            )
+                        }
                     }
                 }
             }
         }
-        if (state is SongUiState.Loaded) WordSheet(
+        if (state is SongUiState.Loaded) {
+            WordSheet(
                 word = state.selectedWord?.word,
                 wiktionary = state.wiktionary,
                 onOpenUrl = uriHandler::openUri,
+                onHeightChange = { sheetHeightPx = it },
                 onDismiss = onWordDismiss,
             )
+        }
     }
 }
 
 @Composable
-private fun Header(track: TrackInfo) {
+private fun Header(track: TrackInfo, onPlay: () -> Unit) {
     val theme = AppTheme.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         AsyncImage(
@@ -184,6 +228,7 @@ private fun Header(track: TrackInfo) {
             text = track.artists.joinToString(", "),
             style = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp),
         )
+        Button(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay)
     }
 }
 
@@ -244,10 +289,15 @@ private fun AnnotationNotice(
     doneLines: Int,
     totalLines: Int,
     onRetry: () -> Unit,
+    onTranslateAgain: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val message = when (status) {
-        AnnotationStatus.Idle -> return
+        AnnotationStatus.Idle -> {
+            // Nothing to say when it went well: only the way to start again, once there is something to throw away
+            if (doneLines > 0) Button(text = stringResource(Res.string.song_translate_again), onClick = onTranslateAgain, isPrimary = false)
+            return
+        }
         AnnotationStatus.Loading -> stringResource(Res.string.annotation_progress, doneLines, totalLines)
         AnnotationStatus.MissingKey -> stringResource(Res.string.annotation_missing_key)
         AnnotationStatus.InvalidKey -> stringResource(Res.string.annotation_invalid_key)
@@ -395,6 +445,7 @@ private fun PreviewContent(state: SongUiState) {
             onSavePaste = {},
             onClosePaste = {},
             onRetryAnnotations = {},
+            onTranslateAgain = {},
             onOpenSettings = {},
             onWordClick = {},
             onWordDismiss = {},
