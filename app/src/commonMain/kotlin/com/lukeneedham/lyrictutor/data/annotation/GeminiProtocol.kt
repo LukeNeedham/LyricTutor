@@ -23,7 +23,7 @@ object GeminiProtocol {
 
     fun prompt(song: TrackInfo, lines: List<AnnotationLine>): String = buildString {
         appendLine("You are a language tutor. The user is learning from the lyrics of the song \"${song.title}\" by ${song.artists.joinToString(", ")}.")
-        appendLine("For each numbered lyric line below, give its English translation and its language.")
+        appendLine("The numbered lines below are the lyrics of the song in order: use the whole song as context. For each line, give its English translation and its language.")
         appendLine()
         appendLine("Rules:")
         appendLine("- \"translation\": the natural English meaning of the whole line. If the line is already English, repeat it.")

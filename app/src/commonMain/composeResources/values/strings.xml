@@ -37,9 +37,7 @@
     <string name="annotation_open_settings">Open Settings</string>
     <string name="annotation_retry">Try again</string>
     <string name="word_language">Language</string>
-    <string name="word_wiktionary_title">Where it comes from</string>
-    <string name="word_wiktionary_open">%1$s on Wiktionary</string>
-    <string name="word_wiktionary_not_found">No Wiktionary page found. Search Wiktionary</string>
+    <string name="word_wiktionary_not_found">No Wiktionary page found for this word.</string>
     <string name="word_wiktionary_loading">Looking it up on Wiktionary…</string>
     <string name="word_wiktionary_error">Could not reach Wiktionary.</string>
     <string name="settings_models_show">Show the models of this key</string>
@@ -52,5 +50,5 @@
     <string name="song_translate_again">Translate again</string>
     <string name="word_form_of">%1$s of %2$s</string>
     <string name="word_no_senses">Wiktionary has a page for this word, but no meanings.</string>
-    <string name="word_source_note">From Wiktionary, under the CC BY-SA license.</string>
+    <string name="word_source_note">From Wiktionary, under the CC BY-SA license. Open the page.</string>
 </resources>

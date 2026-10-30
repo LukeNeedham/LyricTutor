@@ -11,7 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,7 +54,8 @@ internal fun WordSheet(word: String?, wiktionary: WiktionaryUiState, onOpenUrl: 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 520.dp)
+                        // A fixed height, so that the sheet does not change size when what Wiktionary says arrives
+                        .fillMaxHeight(0.5f)
                         // The height is passed on, so that the song can scroll the tapped word above the sheet
                         .onSizeChanged { onHeightChange(it.height) }
                         .background(theme.surface, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))

@@ -6,8 +6,9 @@ import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.coroutines.delay
 
 /**
- * Annotates the lines of a song a few at a time (a small batch answers sooner and a bad answer loses less; the prompt is a small part of the cost), keeping every batch on the device so that a line
- * is never paid for twice. A failed batch is tried once more, then the rest is left for a later try.
+ * Annotates the lines of a song in one request, which gives the model the whole song as context and sends the instructions once; a very
+ * long song is split in requests of [MAX_LINES_PER_REQUEST]. Every answer is kept on the device, so that a line is never paid for twice.
+ * A failed request is tried once more, then the rest is left for a later try.
  */
 class AnnotationRepository(
     private val songCache: SongCache,
@@ -50,7 +51,7 @@ class AnnotationRepository(
         val toAsk = unannotated.map { AnnotationLine(it.first(), lines[it.first()]) }
 
         var leftOut = 0
-        for (batch in toAsk.chunked(BATCH_SIZE)) {
+        for (batch in toAsk.chunked(MAX_LINES_PER_REQUEST)) {
             leftOut += annotateBatch(track, batch, groupOf, onBatch).getOrElse { return Result.failure(it) }
         }
         return if (leftOut == 0) Result.success(Unit) else Result.failure(AnnotationException.Failed("The model left out or did not finish $leftOut lines"))
@@ -117,7 +118,8 @@ class AnnotationRepository(
     }
 
     companion object {
-        const val BATCH_SIZE = 6
+        /** The answer is a few dozen tokens a line, so this many lines is well within what one answer can hold. */
+        const val MAX_LINES_PER_REQUEST = 80
         private const val MAX_PASSES = 2
         private const val RETRY_DELAY_MILLIS = 4_000L
     }

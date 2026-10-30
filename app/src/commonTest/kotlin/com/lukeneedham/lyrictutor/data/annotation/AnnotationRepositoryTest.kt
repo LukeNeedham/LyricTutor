@@ -59,12 +59,12 @@ class AnnotationRepositoryTest {
         val annotator = FakeAnnotator()
         val delivered = mutableListOf<LineAnnotation>()
 
-        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.BATCH_SIZE + 5)) { delivered += it }
+        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.MAX_LINES_PER_REQUEST + 5)) { delivered += it }
 
         assertTrue(result.isSuccess)
         assertEquals(2, annotator.batches.size)
-        assertEquals(AnnotationRepository.BATCH_SIZE + 5, delivered.size)
-        assertEquals(AnnotationRepository.BATCH_SIZE + 5, cache.annotations.size)
+        assertEquals(AnnotationRepository.MAX_LINES_PER_REQUEST + 5, delivered.size)
+        assertEquals(AnnotationRepository.MAX_LINES_PER_REQUEST + 5, cache.annotations.size)
     }
 
     @Test
@@ -128,7 +128,7 @@ class AnnotationRepositoryTest {
     fun stopsAfterTheRetryFailsToo() = runTest {
         val annotator = FakeAnnotator(mutableListOf(AnnotationException.Failed("a"), AnnotationException.Failed("b")))
         val cache = FakeCache()
-        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.BATCH_SIZE + 5)) {}
+        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.MAX_LINES_PER_REQUEST + 5)) {}
 
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())
         assertEquals(2, annotator.batches.size)

@@ -26,8 +26,6 @@ import com.lukeneedham.lyrictutor.generated.resources.word_source_note
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_error
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_loading
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_not_found
-import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_open
-import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_title
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -63,23 +61,28 @@ internal fun WordSheetContent(
             WiktionaryUiState.Error ->
                 BasicText(stringResource(Res.string.word_wiktionary_error), style = textStyle.copy(color = theme.error))
 
-            is WiktionaryUiState.NotFound -> Link(
-                text = stringResource(Res.string.word_wiktionary_not_found),
-                onClick = { onOpenUrl(wiktionary.searchUrl) },
-            )
+            is WiktionaryUiState.NotFound ->
+                BasicText(stringResource(Res.string.word_wiktionary_not_found), style = textStyle.copy(color = theme.outline))
 
-            is WiktionaryUiState.Found -> Found(wiktionary.result, onOpenUrl)
+            is WiktionaryUiState.Found -> Found(wiktionary.result)
         }
-        BasicText(
-            text = stringResource(Res.string.word_source_note),
-            modifier = Modifier.padding(top = 4.dp),
-            style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 14.sp, lineHeight = 20.sp),
-        )
+        // The credit is the link to the page of the word on Wiktionary (a search for it when there is no page)
+        val creditUrl = when (wiktionary) {
+            is WiktionaryUiState.Found -> wiktionary.result.url
+            is WiktionaryUiState.NotFound -> wiktionary.searchUrl
+            else -> null
+        }
+        val creditStyle = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 14.sp, lineHeight = 20.sp)
+        if (creditUrl != null) {
+            Link(text = stringResource(Res.string.word_source_note), style = creditStyle.copy(color = theme.primary), onClick = { onOpenUrl(creditUrl) })
+        } else {
+            BasicText(text = stringResource(Res.string.word_source_note), style = creditStyle)
+        }
     }
 }
 
 @Composable
-private fun Found(result: WiktionaryResult, onOpenUrl: (String) -> Unit) {
+private fun Found(result: WiktionaryResult) {
     val theme = AppTheme.current
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Fact(label = stringResource(Res.string.word_language), value = result.language)
@@ -90,13 +93,6 @@ private fun Found(result: WiktionaryResult, onOpenUrl: (String) -> Unit) {
             )
         }
         for (sense in result.senses) Sense(sense)
-        Column {
-            BasicText(
-                text = stringResource(Res.string.word_wiktionary_title),
-                style = TextStyle(color = theme.outline, fontFamily = theme.fontFamily, fontSize = 13.sp, lineHeight = 18.sp),
-            )
-            Link(text = stringResource(Res.string.word_wiktionary_open, result.title), onClick = { onOpenUrl(result.url) })
-        }
     }
 }
 
@@ -136,19 +132,9 @@ private fun Fact(label: String, value: String) {
 }
 
 @Composable
-private fun Link(text: String, onClick: () -> Unit) {
-    val theme = AppTheme.current
+private fun Link(text: String, style: TextStyle, onClick: () -> Unit) {
     Box(modifier = Modifier.heightIn(min = 48.dp).clickable(onClick = onClick), contentAlignment = Alignment.CenterStart) {
-        BasicText(
-            text = text,
-            style = TextStyle(
-                color = theme.primary,
-                fontFamily = theme.fontFamily,
-                fontSize = 16.sp,
-                lineHeight = 24.sp,
-                textDecoration = TextDecoration.Underline,
-            ),
-        )
+        BasicText(text = text, style = style.copy(textDecoration = TextDecoration.Underline))
     }
 }
 
