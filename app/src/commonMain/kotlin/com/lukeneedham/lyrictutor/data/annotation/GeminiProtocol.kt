@@ -18,6 +18,7 @@ import kotlinx.serialization.json.putJsonObject
 /** The request and the response of Gemini's `generateContent`, as pure functions so that they are tested without a network. */
 object GeminiProtocol {
     private const val MAX_OUTPUT_TOKENS = 16_384
+    private const val CHOICE_MAX_OUTPUT_TOKENS = 512
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
 
@@ -61,6 +62,52 @@ object GeminiProtocol {
                 }
             }
         }
+    }
+
+    /** The question of which part of speech [word] is used as in [line]. */
+    fun choicePrompt(line: String, word: String, language: String?, options: List<String>): String = buildString {
+        appendLine("In this line of a song${language?.takeIf { it.isNotBlank() }?.let { " (in $it)" } ?: ""}, which part of speech is the word \"$word\" used as?")
+        appendLine("Line: $line")
+        appendLine("Options: ${options.joinToString(", ")}")
+        append("Answer with exactly one of the options.")
+    }
+
+    /** A request whose answer can only be one of [options]: Gemini's enum output, a string held to a fixed list. */
+    fun choiceRequestBody(line: String, word: String, language: String?, options: List<String>, model: String = ""): JsonObject = buildJsonObject {
+        putJsonArray("contents") {
+            addJsonObject {
+                putJsonArray("parts") { addJsonObject { put("text", choicePrompt(line, word, language, options)) } }
+            }
+        }
+        putJsonObject("generationConfig") {
+            put("responseMimeType", "text/x.enum")
+            putJsonObject("responseSchema") {
+                put("type", "STRING")
+                putJsonArray("enum") { options.forEach { add(JsonPrimitive(it)) } }
+            }
+            // A few tokens are enough for the answer; the room left is for the thinking that counts against the cap
+            put("maxOutputTokens", CHOICE_MAX_OUTPUT_TOKENS)
+            if (model.startsWith("gemini-3")) {
+                putJsonObject("thinkingConfig") { put("thinkingLevel", "low") }
+            }
+        }
+        putJsonArray("safetySettings") {
+            listOf("HARASSMENT", "HATE_SPEECH", "SEXUALLY_EXPLICIT", "DANGEROUS_CONTENT").forEach { category ->
+                addJsonObject {
+                    put("category", "HARM_CATEGORY_$category")
+                    put("threshold", "BLOCK_NONE")
+                }
+            }
+        }
+    }
+
+    /** The option an answer to [choiceRequestBody] names, or null when it names none (compared without case or quotes). */
+    fun parseChoice(body: String, options: List<String>): String? = try {
+        val text = json.decodeFromString(Response.serializer(), body).candidates.firstOrNull()
+            ?.content?.parts?.mapNotNull { it.text }?.joinToString("")?.trim()?.trim('"', '\'')?.trim()
+        options.firstOrNull { it.equals(text, ignoreCase = true) }
+    } catch (e: IllegalArgumentException) {
+        null
     }
 
     private fun responseSchema(): JsonElement {

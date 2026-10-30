@@ -121,6 +121,29 @@ class GeminiProtocolTest {
     }
 
     @Test
+    fun theChoiceOfAPartOfSpeechIsAskedAsAnEnum() {
+        val options = listOf("Noun", "Verb")
+        val body = GeminiProtocol.choiceRequestBody("een regel", "dingen", "Dutch", options, model = "gemini-3.8-flash").toString()
+        assertTrue("\"responseMimeType\":\"text/x.enum\"" in body)
+        assertTrue("\"enum\":[\"Noun\",\"Verb\"]" in body)
+        assertTrue("een regel" in body && "dingen" in body && "Dutch" in body)
+        assertTrue("\"thinkingLevel\":\"low\"" in body)
+        assertTrue("thinkingLevel" !in GeminiProtocol.choiceRequestBody("x", "y", null, options, model = "gemini-2.5-flash").toString())
+    }
+
+    @Test
+    fun readsTheOptionAnAnswerNames() {
+        val options = listOf("Noun", "Verb")
+        fun answer(text: String) = """{"candidates":[{"content":{"parts":[{"text":"$text"}]}}]}"""
+        assertEquals("Noun", GeminiProtocol.parseChoice(answer("Noun"), options))
+        assertEquals("Verb", GeminiProtocol.parseChoice(answer(" verb\\n"), options))
+        assertEquals("Noun", GeminiProtocol.parseChoice(answer("\\\"Noun\\\""), options))
+        assertNull(GeminiProtocol.parseChoice(answer("Adjective"), options))
+        assertNull(GeminiProtocol.parseChoice("""{"candidates":[]}""", options))
+        assertNull(GeminiProtocol.parseChoice("not json", options))
+    }
+
+    @Test
     fun anAnswerWithoutTextFails() {
         val result = GeminiProtocol.parseResponse("""{"candidates":[{"finishReason":"SAFETY"}]}""")
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())

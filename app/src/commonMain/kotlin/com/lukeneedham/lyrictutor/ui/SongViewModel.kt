@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
+import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.song.SongCache
@@ -12,6 +13,7 @@ import com.lukeneedham.lyrictutor.data.track.TrackResolveException
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryProtocol
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +28,7 @@ class SongViewModel(
     private val lyricsRepository: LyricsRepository,
     private val annotationRepository: AnnotationRepository,
     private val wiktionaryLookup: WiktionaryLookup,
+    private val partOfSpeechChooser: PartOfSpeechChooser,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
@@ -34,6 +37,7 @@ class SongViewModel(
     private var annotationJob: Job? = null
     private var wiktionaryJob: Job? = null
     private val wiktionaryCache = mutableMapOf<String, WiktionaryUiState>()
+    private val partOfSpeechChoices = mutableMapOf<String, String>()
 
     init {
         load()
@@ -62,22 +66,46 @@ class SongViewModel(
 
     fun onWordClick(selected: SelectedWord) {
         wiktionaryJob?.cancel()
-        val key = "${selected.language}|${selected.surface.lowercase()}"
-        val known = wiktionaryCache[key]
-        updateLoaded { it.copy(selectedWord = selected, wiktionary = known ?: WiktionaryUiState.Loading) }
-        if (known != null) return
+        updateLoaded { it.copy(selectedWord = selected, wiktionary = WiktionaryUiState.Loading) }
         wiktionaryJob = viewModelScope.launch {
-            val state = wiktionaryLookup.find(selected.surface, selected.language).fold(
-                onSuccess = { result ->
-                    if (result != null) WiktionaryUiState.Found(result)
-                    else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(selected.surface))
-                },
-                onFailure = { WiktionaryUiState.Error },
-            )
-            // A failure is not kept, so that tapping the word again asks again
-            if (state !is WiktionaryUiState.Error) wiktionaryCache[key] = state
+            val state = loadWiktionary(selected)
             updateLoaded { if (it.selectedWord == selected) it.copy(wiktionary = state) else it }
         }
+    }
+
+    /** What Wiktionary says of the word, for the part of speech the word is used as in its line when its page has several. */
+    private suspend fun loadWiktionary(selected: SelectedWord): WiktionaryUiState {
+        val key = "${selected.language}|${selected.surface.lowercase()}"
+        val page = wiktionaryCache[key] ?: wiktionaryLookup.find(selected.surface, selected.language).fold(
+            onSuccess = { result ->
+                if (result != null) WiktionaryUiState.Found(result)
+                else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(selected.surface))
+            },
+            onFailure = { WiktionaryUiState.Error },
+        ).also { state ->
+            // A failure is not kept, so that tapping the word again asks again
+            if (state !is WiktionaryUiState.Error) wiktionaryCache[key] = state
+        }
+        if (page !is WiktionaryUiState.Found) return page
+        return WiktionaryUiState.Found(page.result.copy(senses = senseOfUse(page.result.senses, selected)))
+    }
+
+    /**
+     * The senses of the part of speech that the word is used as in its line. A word with one part of speech needs no question; for
+     * several the AI chooses among them, which costs a few tokens. With no answer (no key, a failure, an answer that is none of
+     * them) every sense is kept, as Wiktionary has them.
+     */
+    private suspend fun senseOfUse(senses: List<WiktionarySense>, selected: SelectedWord): List<WiktionarySense> {
+        val options = senses.map { it.partOfSpeech }.distinct()
+        if (options.size < 2) return senses
+        val line = ((_uiState.value as? SongUiState.Loaded)?.lyrics as? LyricsUiState.Found)?.lyrics?.lines
+            ?.getOrNull(selected.lineIndex)?.text ?: return senses
+
+        val key = "${selected.language}|${selected.surface.lowercase()}|$line"
+        val chosen = partOfSpeechChoices[key]
+            ?: partOfSpeechChooser.choose(line, selected.surface, selected.language, options).getOrNull()
+                ?.also { partOfSpeechChoices[key] = it }
+        return senses.filter { it.partOfSpeech.equals(chosen, ignoreCase = true) }.ifEmpty { senses }
     }
 
     fun onWordDismiss() {
