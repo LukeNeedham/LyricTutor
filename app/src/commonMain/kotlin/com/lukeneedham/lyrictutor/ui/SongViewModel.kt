@@ -81,7 +81,7 @@ class SongViewModel(
         val page = wiktionaryCache[key] ?: wiktionaryLookup.find(selected.surface, selected.language).fold(
             onSuccess = { result ->
                 if (result != null) WiktionaryUiState.Found(result)
-                else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(selected.surface))
+                else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(WiktionaryProtocol.displayWord(selected.surface)))
             },
             onFailure = { WiktionaryUiState.Error },
         ).also { state ->

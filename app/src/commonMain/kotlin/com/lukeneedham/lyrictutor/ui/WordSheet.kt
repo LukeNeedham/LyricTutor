@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryProtocol
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.action_close
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
@@ -78,7 +79,7 @@ internal fun WordSheet(
         // The sheet is the scrolling part: dragging the content moves the sheet first and scrolls the content once it is all the way up
         Column(modifier = Modifier.fillMaxWidth().heightIn(min = 360.dp).verticalScroll(rememberScrollState())) {
             WordSheetContent(
-                word = selected.surface,
+                word = WiktionaryProtocol.displayWord(selected.surface),
                 language = selected.language,
                 wiktionary = wiktionary,
                 onOpenUrl = onOpenUrl,

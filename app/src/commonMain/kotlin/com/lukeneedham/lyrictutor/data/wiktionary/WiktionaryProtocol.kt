@@ -46,14 +46,21 @@ object WiktionaryProtocol {
         return if (languages.size == 1) entries else emptyList()
     }
 
-    /** The pages to try, best first: the word as it is written in the lyrics (without the punctuation around it), then in lower case. */
-    fun candidates(word: String): List<String> =
-        word.replace('’', '\'')
-            .trim { !it.isLetterOrDigit() && it != '\'' }
-            .trimStart('\'')
-            .let { listOf(it, it.lowercase()) }
-            .filter { it.isNotEmpty() }
-            .distinct()
+    /** The word without the punctuation around it, in lower case: how the sheet of a word names it. */
+    fun displayWord(word: String): String = word.replace('’', '\'')
+        .trim { !it.isLetterOrDigit() && it != '\'' }
+        .trimStart('\'')
+        .lowercase()
+
+    /**
+     * The pages to try, best first: the word in lower case (a word is capitalized at the start of a line, and the pages are case
+     * sensitive), then as it is written in the lyrics, for a word that only has a page with a capital, such as a name. No punctuation.
+     */
+    fun candidates(word: String): List<String> {
+        val lower = displayWord(word)
+        val written = word.replace('’', '\'').trim { !it.isLetterOrDigit() && it != '\'' }.trimStart('\'')
+        return listOf(lower, written).filter { it.isNotEmpty() }.distinct()
+    }
 
     /** What a definition of an entry is: a meaning, a "form of" another word, or a line that details a "form of" above it. */
     private sealed interface Parsed {
