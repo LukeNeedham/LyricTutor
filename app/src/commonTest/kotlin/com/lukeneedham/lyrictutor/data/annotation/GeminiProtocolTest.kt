@@ -66,6 +66,15 @@ class GeminiProtocolTest {
     }
 
     @Test
+    fun tellsADailyQuotaFromAPerMinuteOne() {
+        val daily = """{"error":{"code":429,"message":"Quota exceeded for metric: generate_content_free_tier_requests, Generate content requests per day limit exceeded"}}"""
+        val perMinute = """{"error":{"code":429,"message":"Quota exceeded for metric: GenerateRequestsPerMinutePerProjectPerModel-FreeTier"}}"""
+        assertTrue(GeminiProtocol.isDailyQuota(daily))
+        assertTrue(!GeminiProtocol.isDailyQuota(perMinute))
+        assertEquals("Quota exceeded", GeminiProtocol.errorMessage("""{"error":{"message":"Quota exceeded"}}"""))
+    }
+
+    @Test
     fun anAnswerWithoutTextFails() {
         val result = GeminiProtocol.parseResponse("""{"candidates":[{"finishReason":"SAFETY"}]}""")
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())

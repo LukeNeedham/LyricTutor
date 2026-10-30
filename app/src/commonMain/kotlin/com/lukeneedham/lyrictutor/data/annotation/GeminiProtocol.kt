@@ -126,6 +126,9 @@ object GeminiProtocol {
         null
     }
 
+    /** Whether the body of a 429 answer says that a limit per day was hit (it names the quota, for example "...PerDay...limit exceeded"). */
+    fun isDailyQuota(body: String): Boolean = body.contains("PerDay", ignoreCase = true) || body.contains("per day", ignoreCase = true)
+
     /** The annotations in a `generateContent` response body. Fails with [AnnotationException.Failed] when there is no usable answer. */
     fun parseResponse(body: String): Result<List<LineAnnotation>> = try {
         val response = json.decodeFromString(Response.serializer(), body)

@@ -21,8 +21,8 @@ sealed class AnnotationException(message: String, cause: Throwable? = null) : Ex
     /** The provider refused the key. */
     class InvalidKey : AnnotationException("The API key was refused")
 
-    /** The free tier's limits were hit: trying again later works. */
-    class RateLimited : AnnotationException("Rate limited")
+    /** The provider's limits were hit. [isDaily]: the limit is per day, so trying again in a moment does not help. */
+    class RateLimited(val isDaily: Boolean = false) : AnnotationException(if (isDaily) "Daily limit reached" else "Rate limited")
 
     class Failed(message: String, cause: Throwable? = null) : AnnotationException(message, cause)
 }

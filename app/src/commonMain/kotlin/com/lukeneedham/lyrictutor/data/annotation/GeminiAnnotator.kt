@@ -49,7 +49,7 @@ class GeminiAnnotator(
                 Logger.e("Gemini answered ${response.status} for model ${settings.model}: ${text.take(500)}")
                 return Result.failure(
                     when {
-                        response.status == HttpStatusCode.TooManyRequests -> AnnotationException.RateLimited()
+                        response.status == HttpStatusCode.TooManyRequests -> AnnotationException.RateLimited(isDaily = GeminiProtocol.isDailyQuota(text))
                         response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden ||
                             response.status == HttpStatusCode.BadRequest && reason?.contains("API key", ignoreCase = true) == true ->
                             AnnotationException.InvalidKey()

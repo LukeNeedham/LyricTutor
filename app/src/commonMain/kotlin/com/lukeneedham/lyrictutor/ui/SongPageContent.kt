@@ -38,6 +38,7 @@ import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
+import com.lukeneedham.lyrictutor.generated.resources.annotation_daily_limit
 import com.lukeneedham.lyrictutor.generated.resources.annotation_failed
 import com.lukeneedham.lyrictutor.generated.resources.annotation_invalid_key
 import com.lukeneedham.lyrictutor.generated.resources.annotation_progress
@@ -228,13 +229,14 @@ private fun AnnotationNotice(
         AnnotationStatus.MissingKey -> stringResource(Res.string.annotation_missing_key)
         AnnotationStatus.InvalidKey -> stringResource(Res.string.annotation_invalid_key)
         AnnotationStatus.RateLimited -> stringResource(Res.string.annotation_rate_limited)
+        AnnotationStatus.DailyLimit -> stringResource(Res.string.annotation_daily_limit)
         AnnotationStatus.Failed -> stringResource(Res.string.annotation_failed)
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Message(text = message, isError = status != AnnotationStatus.Loading, isSubtle = status == AnnotationStatus.Loading)
         if (detail != null) Message(text = detail, isSubtle = true)
         when (status) {
-            AnnotationStatus.MissingKey, AnnotationStatus.InvalidKey ->
+            AnnotationStatus.MissingKey, AnnotationStatus.InvalidKey, AnnotationStatus.DailyLimit ->
                 Button(text = stringResource(Res.string.annotation_open_settings), onClick = onOpenSettings)
             AnnotationStatus.RateLimited, AnnotationStatus.Failed ->
                 Button(text = stringResource(Res.string.annotation_retry), onClick = onRetry)

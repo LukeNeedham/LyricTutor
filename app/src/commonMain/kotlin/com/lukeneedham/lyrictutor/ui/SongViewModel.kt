@@ -108,7 +108,7 @@ class SongViewModel(
                     when (it) {
                         is AnnotationException.MissingKey -> AnnotationStatus.MissingKey
                         is AnnotationException.InvalidKey -> AnnotationStatus.InvalidKey
-                        is AnnotationException.RateLimited -> AnnotationStatus.RateLimited
+                        is AnnotationException.RateLimited -> if (it.isDaily) AnnotationStatus.DailyLimit else AnnotationStatus.RateLimited
                         else -> AnnotationStatus.Failed
                     }
                 },

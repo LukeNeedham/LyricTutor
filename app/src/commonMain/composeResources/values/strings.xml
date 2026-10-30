@@ -32,6 +32,7 @@
     <string name="annotation_missing_key">Add your Gemini API key in Settings to see translations and word meanings.</string>
     <string name="annotation_invalid_key">Gemini refused your API key. Check it in Settings.</string>
     <string name="annotation_rate_limited">Gemini says you have used up its free limit for now. Try again in a little while.</string>
+    <string name="annotation_daily_limit">The free limit for today is used up for this model. Try again tomorrow, or choose another model in Settings.</string>
     <string name="annotation_failed">Could not get the translations.</string>
     <string name="annotation_open_settings">Open Settings</string>
     <string name="annotation_retry">Try again</string>
