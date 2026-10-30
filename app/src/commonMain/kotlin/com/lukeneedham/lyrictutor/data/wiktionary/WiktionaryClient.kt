@@ -13,9 +13,10 @@ import kotlinx.coroutines.CancellationException
 
 /**
  * Looks a word up in the English Wiktionary (its REST `page/definition` endpoint). A word that is a form of another ("voy" is a form
- * of "ir") also gets the meanings of the other, with one more request.
+ * of "ir") also gets the meanings of the other, with one more request. The raw answer for each page, and the lack of a page, is kept
+ * for good in [pageCache]: a page is asked for once. A failed request is not kept.
  */
-class WiktionaryClient(private val client: HttpClient) : WiktionaryLookup {
+class WiktionaryClient(private val client: HttpClient, private val pageCache: WiktionaryPageCache) : WiktionaryLookup {
 
     override suspend fun find(word: String, language: String?): Result<WiktionaryResult?> = try {
         Result.success(lookUp(word, language))
@@ -55,12 +56,21 @@ class WiktionaryClient(private val client: HttpClient) : WiktionaryLookup {
 
     /** The entries of a page; empty when there is no such page. */
     private suspend fun fetchEntries(title: String): List<WiktionaryEntryDto> {
+        val cached = pageCache.get(title)
+        if (cached != null) return if (cached.isEmpty()) emptyList() else WiktionaryProtocol.parseEntries(cached)
+
         val response = client.get("https://en.wiktionary.org/api/rest_v1/page/definition/${title.encodeURLPath()}") {
             header(HttpHeaders.UserAgent, USER_AGENT)
         }
-        if (response.status == HttpStatusCode.NotFound) return emptyList()
+        if (response.status == HttpStatusCode.NotFound) {
+            pageCache.put(title, "")
+            return emptyList()
+        }
         check(response.status.isSuccess()) { "Wiktionary answered ${response.status}" }
-        return WiktionaryProtocol.parseEntries(response.bodyAsText())
+        val body = response.bodyAsText()
+        val entries = WiktionaryProtocol.parseEntries(body)
+        pageCache.put(title, body)
+        return entries
     }
 
     private companion object {
