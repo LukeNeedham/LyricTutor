@@ -57,7 +57,7 @@ class GeminiAnnotator(
                     },
                 )
             }
-            Logger.i("${settings.model} answered in ${mark.elapsedNow()}")
+            Logger.i("${settings.model} answered in ${mark.elapsedNow()}, tokens: ${GeminiProtocol.describeUsage(text) ?: "not reported"}")
             text
         } catch (e: CancellationException) {
             throw e

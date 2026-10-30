@@ -134,6 +134,19 @@ object GeminiProtocol {
     /** Whether the body of a 429 answer says that a limit per day was hit (it names the quota, for example "...PerDay...limit exceeded"). */
     fun isDailyQuota(body: String): Boolean = body.contains("PerDay", ignoreCase = true) || body.contains("per day", ignoreCase = true)
 
+    /** The tokens an answer used, for the log, for example "in 812, out 3401, thinking 150": null when the answer does not say. */
+    fun describeUsage(body: String): String? = try {
+        json.decodeFromString(Response.serializer(), body).usageMetadata?.let { usage ->
+            listOfNotNull(
+                usage.promptTokenCount?.let { "in $it" },
+                usage.candidatesTokenCount?.let { "out $it" },
+                usage.thoughtsTokenCount?.let { "thinking $it" },
+            ).takeIf { it.isNotEmpty() }?.joinToString(", ")
+        }
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
     /** The annotations in a `generateContent` response body. Fails with [AnnotationException.Failed] when there is no usable answer. */
     fun parseResponse(body: String): Result<List<LineAnnotation>> = try {
         val response = json.decodeFromString(Response.serializer(), body)
@@ -157,7 +170,10 @@ object GeminiProtocol {
     private data class ErrorBody(val message: String? = null)
 
     @Serializable
-    private data class Response(val candidates: List<Candidate> = emptyList())
+    private data class Response(val candidates: List<Candidate> = emptyList(), val usageMetadata: Usage? = null)
+
+    @Serializable
+    private data class Usage(val promptTokenCount: Int? = null, val candidatesTokenCount: Int? = null, val thoughtsTokenCount: Int? = null)
 
     @Serializable
     private data class Candidate(val content: Content? = null, val finishReason: String? = null)

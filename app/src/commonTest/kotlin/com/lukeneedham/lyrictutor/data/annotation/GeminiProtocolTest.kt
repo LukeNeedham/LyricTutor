@@ -75,6 +75,15 @@ class GeminiProtocolTest {
     }
 
     @Test
+    fun describesTheTokensOfAnAnswer() {
+        val usage = """{"candidates":[],"usageMetadata":{"promptTokenCount":812,"candidatesTokenCount":3401,"thoughtsTokenCount":150,"totalTokenCount":4363}}"""
+        assertEquals("in 812, out 3401, thinking 150", GeminiProtocol.describeUsage(usage))
+        assertEquals("in 5", GeminiProtocol.describeUsage("""{"usageMetadata":{"promptTokenCount":5}}"""))
+        assertNull(GeminiProtocol.describeUsage("""{"candidates":[]}"""))
+        assertNull(GeminiProtocol.describeUsage("not json"))
+    }
+
+    @Test
     fun anAnswerWithoutTextFails() {
         val result = GeminiProtocol.parseResponse("""{"candidates":[{"finishReason":"SAFETY"}]}""")
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())
