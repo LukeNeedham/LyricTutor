@@ -76,6 +76,35 @@ class AnnotationRepositoryTest {
     }
 
     @Test
+    fun asksOnceForALineThatRepeatsAndGivesItToEveryCopy() = runTest {
+        val cache = FakeCache()
+        val annotator = FakeAnnotator()
+        val delivered = mutableListOf<LineAnnotation>()
+
+        // The same line again, in another case and with other spacing
+        val result = AnnotationRepository(cache, annotator).annotate(track, listOf("hola", "adios", "hola", "HOLA  ", "adios")) { delivered += it }
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf(listOf(0, 1)), annotator.batches)
+        assertEquals(setOf(0, 1, 2, 3, 4), cache.annotations.keys)
+        assertEquals(listOf("t0", "t1", "t0", "t0", "t1"), (0..4).map { cache.annotations.getValue(it).translation })
+        assertEquals(5, delivered.size)
+    }
+
+    @Test
+    fun givesAKeptAnnotationToLinesThatRepeatItAndAreNew() = runTest {
+        val cache = FakeCache(mutableMapOf(0 to LineAnnotation(0, "kept")))
+        val annotator = FakeAnnotator()
+        val delivered = mutableListOf<LineAnnotation>()
+
+        AnnotationRepository(cache, annotator).annotate(track, listOf("hola", "adios", "hola")) { delivered += it }
+
+        assertEquals(listOf(listOf(1)), annotator.batches)
+        assertEquals("kept", cache.annotations.getValue(2).translation)
+        assertEquals(setOf(0, 1, 2), delivered.map { it.index }.toSet())
+    }
+
+    @Test
     fun skipsBlankLines() = runTest {
         val annotator = FakeAnnotator()
         AnnotationRepository(FakeCache(), annotator).annotate(track, listOf("uno", " ", "dos")) {}

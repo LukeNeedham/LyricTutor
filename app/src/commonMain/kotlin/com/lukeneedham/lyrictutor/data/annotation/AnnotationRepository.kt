@@ -15,29 +15,57 @@ class AnnotationRepository(
 ) {
     /**
      * Calls [onBatch] with the annotations already on the device, then with each new batch as it arrives.
+     * A line that repeats (a chorus) is annotated once and the result is given to every identical line.
      * Fails with the first [AnnotationException] that survives the retry (batches before it stay delivered and kept), or, after
      * going through every batch, when the model left lines out.
      */
     suspend fun annotate(track: TrackInfo, lines: List<String>, onBatch: (List<LineAnnotation>) -> Unit): Result<Unit> {
-        val cached = songCache.getAnnotations(track.trackId).filter { it.index in lines.indices }
-        if (cached.isNotEmpty()) onBatch(cached)
+        val kept = songCache.getAnnotations(track.trackId).filter { it.index in lines.indices }.associateBy { it.index }
 
-        val done = cached.map { it.index }.toSet()
-        val missing = lines.mapIndexedNotNull { index, text ->
-            if (index in done || text.isBlank()) null else AnnotationLine(index, text)
+        // The indexes of the lines that say the same, in the order of the song
+        val groups = lines.indices
+            .filter { lines[it].isNotBlank() }
+            .groupBy { sameLineKey(lines[it]) }
+            .values
+
+        // A line whose twin was annotated before is given the same annotation
+        val fromDevice = mutableListOf<LineAnnotation>()
+        val copies = mutableListOf<LineAnnotation>()
+        for (group in groups) {
+            val known = group.firstNotNullOfOrNull { kept[it] } ?: continue
+            for (index in group) {
+                fromDevice += kept[index] ?: known.copy(index = index).also { copies += it }
+            }
         }
+        if (copies.isNotEmpty()) songCache.saveAnnotations(track.trackId, annotator.providerName, copies)
+        if (fromDevice.isNotEmpty()) onBatch(fromDevice)
+
+        // Only the first line of each group that has no annotation yet is asked for
+        val unannotated = groups.filter { group -> group.none { it in kept } }
+        val groupOf = unannotated.associateBy { it.first() }
+        val toAsk = unannotated.map { AnnotationLine(it.first(), lines[it.first()]) }
+
         var leftOut = 0
-        for (batch in missing.chunked(BATCH_SIZE)) {
-            leftOut += annotateBatch(track, batch, onBatch).getOrElse { return Result.failure(it) }
+        for (batch in toAsk.chunked(BATCH_SIZE)) {
+            leftOut += annotateBatch(track, batch, groupOf, onBatch).getOrElse { return Result.failure(it) }
         }
         return if (leftOut == 0) Result.success(Unit) else Result.failure(AnnotationException.Failed("The model left out $leftOut lines"))
     }
 
+    /** Lines that differ only by case or spacing are the same line. */
+    private fun sameLineKey(line: String): String = line.trim().lowercase().replace(Regex("\\s+"), " ")
+
     /**
-     * Asks for [batch] and, when the answer fails or lacks some lines, once more for what is still missing.
+     * Asks for [batch] and, when the answer fails or lacks some lines, once more for what is still missing. [groupOf] says, for the
+     * first line of a group, all the lines of the group: they get the same annotation.
      * Success holds the number of lines left out; failure, an error that no second try fixes or an answer without a single line.
      */
-    private suspend fun annotateBatch(track: TrackInfo, batch: List<AnnotationLine>, onBatch: (List<LineAnnotation>) -> Unit): Result<Int> {
+    private suspend fun annotateBatch(
+        track: TrackInfo,
+        batch: List<AnnotationLine>,
+        groupOf: Map<Int, List<Int>>,
+        onBatch: (List<LineAnnotation>) -> Unit,
+    ): Result<Int> {
         var pending = batch
         var lastError: Throwable? = null
         var delivered = false
@@ -56,14 +84,18 @@ class AnnotationRepository(
             ).filter { annotation -> asked.any { it.index == annotation.index } }
 
             if (answered.isNotEmpty()) {
-                songCache.saveAnnotations(track.trackId, annotator.providerName, answered)
-                onBatch(answered)
+                val everyLine = answered.flatMap { annotation ->
+                    (groupOf[annotation.index] ?: listOf(annotation.index)).map { annotation.copy(index = it) }
+                }
+                songCache.saveAnnotations(track.trackId, annotator.providerName, everyLine)
+                onBatch(everyLine)
                 delivered = true
             }
             pending = asked.filter { line -> answered.none { it.index == line.index } }
             if (pending.isEmpty()) return Result.success(0)
         }
-        return if (delivered) Result.success(pending.size) else Result.failure(lastError ?: AnnotationException.Failed("The model answered no line"))
+        val leftOut = pending.sumOf { groupOf[it.index]?.size ?: 1 }
+        return if (delivered) Result.success(leftOut) else Result.failure(lastError ?: AnnotationException.Failed("The model answered no line"))
     }
 
     companion object {
