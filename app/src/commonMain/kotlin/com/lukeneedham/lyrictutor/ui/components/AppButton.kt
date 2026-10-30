@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.sp
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-internal enum class AppButtonStyle { Primary, Tonal, Plain }
+internal enum class AppButtonStyle { Primary, Secondary, Tonal, Plain }
 
-/** A pill button. [Primary] is the main action of a view, [Tonal] a quieter one, [Plain] only coloured text. */
+/** A pill button. [Primary] is the main action of a view, [Secondary] the same in the second colour, [Tonal] a quieter one, [Plain] only coloured text. */
 @Composable
 internal fun AppButton(
     text: String,
@@ -32,11 +32,13 @@ internal fun AppButton(
     val theme = AppTheme.current
     val container = when (style) {
         AppButtonStyle.Primary -> theme.primary
+        AppButtonStyle.Secondary -> theme.secondary
         AppButtonStyle.Tonal -> theme.primaryContainer
         AppButtonStyle.Plain -> androidx.compose.ui.graphics.Color.Transparent
     }
     val content = when (style) {
         AppButtonStyle.Primary -> theme.onPrimary
+        AppButtonStyle.Secondary -> theme.onSecondary
         AppButtonStyle.Tonal -> theme.onPrimaryContainer
         AppButtonStyle.Plain -> theme.primary
     }
@@ -61,6 +63,7 @@ private fun Preview() {
     AppTheme {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(16.dp)) {
             AppButton(text = "Play", onClick = {}, icon = AppIcon.Play)
+            AppButton(text = "Again", onClick = {}, style = AppButtonStyle.Secondary, icon = AppIcon.Refresh)
             AppButton(text = "Again", onClick = {}, style = AppButtonStyle.Tonal, icon = AppIcon.Refresh)
             AppButton(text = "Cancel", onClick = {}, style = AppButtonStyle.Plain)
         }

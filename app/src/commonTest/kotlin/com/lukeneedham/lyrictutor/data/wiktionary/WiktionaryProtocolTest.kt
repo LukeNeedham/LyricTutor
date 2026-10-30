@@ -159,8 +159,9 @@ class WiktionaryProtocolTest {
 
     @Test
     fun triesTheWordAsWrittenThenInLowerCase() {
-        assertEquals(listOf("Voy", "voy"), WiktionaryProtocol.candidates("Voy,"))
+        assertEquals(listOf("voy", "Voy"), WiktionaryProtocol.candidates("Voy,"))
         assertEquals(listOf("voy"), WiktionaryProtocol.candidates("(voy)"))
+        assertEquals("soon", WiktionaryProtocol.displayWord("Soon,"))
         assertEquals(listOf("pa'"), WiktionaryProtocol.candidates("pa’"))
         assertEquals(emptyList(), WiktionaryProtocol.candidates("..."))
     }

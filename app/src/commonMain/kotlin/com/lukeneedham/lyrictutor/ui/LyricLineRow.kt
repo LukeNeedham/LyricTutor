@@ -1,6 +1,5 @@
 package com.lukeneedham.lyrictutor.ui
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -25,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,7 +38,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
  * One line of the lyrics, every word of which can be tapped, and its translation under it. [isTranslating]: the translation is
- * still on its way, so a placeholder takes its place. [selectedToken] is the place of the word whose sheet is open, if it is in this line.
+ * still on its way, so a placeholder takes its place. [selectedToken] is the place of the word whose sheet is open, if it is in this line, and [onSelectedBoundsChange] gets where it is on the screen.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -48,6 +49,7 @@ internal fun LyricLineRow(
     selectedToken: Int?,
     onWordClick: (word: String, language: String?, tokenIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
+    onSelectedBoundsChange: (Rect) -> Unit = {},
 ) {
     val theme = AppTheme.current
     val tokens = remember(line.text) { line.text.split(' ').filter { it.isNotEmpty() } }
@@ -56,11 +58,6 @@ internal fun LyricLineRow(
         FlowRow {
             for ((tokenIndex, token) in tokens.withIndex()) {
                 val isSelected = tokenIndex == selectedToken
-                // The word whose sheet is open is marked, so it is clear which word the sheet is about
-                val highlight by animateColorAsState(
-                    targetValue = if (isSelected) theme.primary.copy(alpha = 0.12f) else Color.Transparent,
-                    label = "wordHighlight",
-                )
                 Box(
                     modifier = Modifier
                         .heightIn(min = 48.dp)
@@ -76,7 +73,7 @@ internal fun LyricLineRow(
                         lineHeight = 28.sp,
                         weight = FontWeight.SemiBold,
                         modifier = Modifier
-                            .background(highlight, RoundedCornerShape(8.dp))
+                            .then(if (isSelected) Modifier.onGloballyPositioned { onSelectedBoundsChange(it.boundsInWindow()) } else Modifier)
                             .padding(horizontal = 5.dp, vertical = 2.dp),
                     )
                 }

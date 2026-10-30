@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -75,16 +76,14 @@ internal fun AppIconImage(
             }
             AppIcon.Check -> polyline(5f to 12.5f, 10f to 17.5f, 19f to 7f)
             AppIcon.Refresh -> {
-                drawArc(
-                    color = tint,
-                    startAngle = -50f,
-                    sweepAngle = 290f,
-                    useCenter = false,
-                    topLeft = point(5f, 5f),
-                    size = Size(14f * unit, 14f * unit),
-                    style = stroke,
-                )
-                polyline(19f to 3f, 19f to 8f, 14f to 8f)
+                // A clockwise circle open at the top right, ending in an arrow head
+                val path = Path()
+                path.moveTo(21f * unit, 12f * unit)
+                path.arcTo(Rect(point(3f, 3f), point(21f, 21f)), 0f, 270f, false)
+                path.cubicTo(14.52f * unit, 3f * unit, 16.93f * unit, 4f * unit, 18.74f * unit, 5.74f * unit)
+                path.lineTo(21f * unit, 8f * unit)
+                drawPath(path, tint, style = stroke)
+                polyline(21f to 3f, 21f to 8f, 16f to 8f)
             }
             AppIcon.External -> {
                 polyline(10f to 5f, 5f to 5f, 5f to 19f, 19f to 19f, 19f to 14f)

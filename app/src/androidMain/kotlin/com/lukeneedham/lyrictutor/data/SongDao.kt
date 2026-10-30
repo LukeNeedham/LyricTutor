@@ -11,6 +11,12 @@ interface SongDao {
     @Query("SELECT * FROM song ORDER BY lastOpened DESC")
     fun observeSongs(): Flow<List<SongEntity>>
 
+    @Query("SELECT * FROM annotation")
+    fun observeAnnotations(): Flow<List<AnnotationEntity>>
+
+    @Query("SELECT * FROM lyrics")
+    fun observeLyrics(): Flow<List<LyricsEntity>>
+
     @Query("SELECT * FROM song WHERE trackId = :trackId")
     suspend fun getSong(trackId: String): SongEntity?
 

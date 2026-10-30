@@ -41,7 +41,6 @@ internal fun SongToolbarTitle(track: TrackInfo, onClick: () -> Unit, modifier: M
             coverUrl = track.coverUrl,
             contentDescription = stringResource(Res.string.song_cover_description),
             size = 32.dp,
-            cornerRadius = 8.dp,
         )
         AppText(
             text = track.title,

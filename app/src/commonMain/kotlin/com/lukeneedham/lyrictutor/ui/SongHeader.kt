@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +29,7 @@ import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppText
 import com.lukeneedham.lyrictutor.ui.components.CoverArt
+import com.lukeneedham.lyrictutor.ui.components.LanguageTag
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -37,6 +40,10 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 internal fun SongHeader(
     track: TrackInfo,
     canTranslateAgain: Boolean,
+    /** The languages of the lyrics, the most common first. */
+    languages: List<String>,
+    /** Whether the colours of the cover are read: the buttons wait for them, so they never show in the app's own colours first. */
+    showActions: Boolean,
     onPlay: () -> Unit,
     onTranslateAgain: () -> Unit,
     modifier: Modifier = Modifier,
@@ -47,13 +54,12 @@ internal fun SongHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        val coverShape = RoundedCornerShape(24.dp)
+        val coverShape = RoundedCornerShape(5.dp)
         CoverArt(
             trackId = track.trackId,
             coverUrl = track.coverUrl,
             contentDescription = stringResource(Res.string.song_cover_description),
             size = 220.dp,
-            cornerRadius = 24.dp,
             modifier = Modifier.shadow(elevation = 16.dp, shape = coverShape, clip = false),
         )
         Column(
@@ -75,20 +81,34 @@ internal fun SongHeader(
                 textAlign = TextAlign.Center,
             )
         }
-        FlowRow(
-            modifier = Modifier.padding(top = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            AppButton(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay, icon = AppIcon.Play)
-            if (canTranslateAgain) {
-                AppButton(
-                    text = stringResource(Res.string.song_translate_again),
-                    onClick = onTranslateAgain,
-                    style = AppButtonStyle.Tonal,
-                    icon = AppIcon.Refresh,
-                )
+        if (showActions && languages.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (language in languages) LanguageTag(language = language)
             }
+        }
+        if (showActions) {
+            FlowRow(
+                modifier = Modifier.padding(top = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                AppButton(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay, icon = AppIcon.Play)
+                if (canTranslateAgain) {
+                    AppButton(
+                        text = stringResource(Res.string.song_translate_again),
+                        onClick = onTranslateAgain,
+                        style = AppButtonStyle.Secondary,
+                        icon = AppIcon.Refresh,
+                    )
+                }
+            }
+        } else {
+            // The room the buttons will take, so that the lyrics do not jump down when they come
+            Spacer(modifier = Modifier.padding(top = 14.dp).height(48.dp))
         }
     }
 }
@@ -108,6 +128,8 @@ private fun Preview() {
                 releaseDate = "2023-03-10",
             ),
             canTranslateAgain = true,
+            languages = listOf("Spanish", "English"),
+            showActions = true,
             onPlay = {},
             onTranslateAgain = {},
             modifier = Modifier.padding(16.dp),

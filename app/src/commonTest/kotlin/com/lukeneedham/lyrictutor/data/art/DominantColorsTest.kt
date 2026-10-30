@@ -22,6 +22,16 @@ class DominantColorsTest {
     }
 
     @Test
+    fun aSmallPatchOfAVeryDifferentColorBeatsALargerSimilarOne() {
+        // Dark blue, lots of light blue and a bit of orange: orange is the secondary colour
+        val colors = assertNotNull(
+            DominantColors.extract(pixels(argb(20, 40, 150) to 600, argb(100, 170, 255) to 300, argb(255, 140, 20) to 40)),
+        )
+        assertTrue(near(colors.primary.blue, 150))
+        assertTrue(near(colors.secondary.red, 255) && near(colors.secondary.blue, 20))
+    }
+
+    @Test
     fun aShadeOfThePrimaryColorIsNotTheSecondaryColor() {
         // Dark red is the second most common colour, but it is too close to red: blue is the second colour
         val colors = assertNotNull(

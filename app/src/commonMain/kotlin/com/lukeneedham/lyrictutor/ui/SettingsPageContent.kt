@@ -15,6 +15,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +76,7 @@ internal fun SettingsPageContent(
     onApiKeyChange: (String) -> Unit,
     onModelChange: (String) -> Unit,
     onShowModels: () -> Unit,
+    onDismissModels: () -> Unit,
     onPickModel: (String) -> Unit,
     onSave: () -> Unit,
     onOpenDebug: () -> Unit,
@@ -111,7 +115,7 @@ internal fun SettingsPageContent(
                 }
                 Field(label = stringResource(Res.string.settings_model_label)) {
                     AppTextField(value = state.model, onValueChange = onModelChange)
-                    ModelList(state = state.models, selected = state.model, onShow = onShowModels, onPick = onPickModel)
+                    ModelButton(state = state.models, onShow = onShowModels)
                 }
                 AppButton(
                     text = stringResource(if (state.isSaved) Res.string.settings_saved else Res.string.settings_save),
@@ -126,6 +130,9 @@ internal fun SettingsPageContent(
             // Draws nothing unless debugging is on, so it stays in the layout for release builds
             if (state.isDebugEnabled) DebugButton(onClick = onOpenDebug)
         }
+    }
+    (state.models as? ModelListUiState.Loaded)?.let {
+        ModelSheet(models = it.models, selected = state.model, onPick = onPickModel, onDismiss = onDismissModels)
     }
 }
 
@@ -153,13 +160,13 @@ private fun Field(label: String, content: @Composable () -> Unit) {
     }
 }
 
-/** A button that fetches the models of the key and, once fetched, a row for each: tapping one fills the model field. */
+/** The button that fetches the models of the key: while it does, a spinner; if it cannot, why. The models themselves are in [ModelSheet]. */
 @Composable
-private fun ModelList(state: ModelListUiState, selected: String, onShow: () -> Unit, onPick: (String) -> Unit) {
+private fun ModelButton(state: ModelListUiState, onShow: () -> Unit) {
     val theme = AppTheme.current
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        when (state) {
-            ModelListUiState.Loading -> Row(
+        if (state == ModelListUiState.Loading) {
+            Row(
                 modifier = Modifier.heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -167,48 +174,67 @@ private fun ModelList(state: ModelListUiState, selected: String, onShow: () -> U
                 Spinner(diameter = 18.dp)
                 AppText(text = stringResource(Res.string.settings_models_loading), color = theme.onSurfaceVariant, size = 14.sp)
             }
-
-            is ModelListUiState.Loaded -> if (state.models.isEmpty()) {
-                AppText(text = stringResource(Res.string.settings_models_none), color = theme.error, size = 14.sp)
-            } else {
-                for (model in state.models) {
-                    val isSelected = model == selected
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(if (isSelected) theme.primaryContainer else theme.surfaceVariant)
-                            .clickable(role = Role.RadioButton) { onPick(model) }
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        AppText(
-                            text = model,
-                            color = if (isSelected) theme.onPrimaryContainer else theme.onSurface,
-                            size = 15.sp,
-                            weight = if (isSelected) FontWeight.SemiBold else null,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (isSelected) AppIconImage(icon = AppIcon.Check, tint = theme.onPrimaryContainer, iconSize = 20.dp)
-                    }
-                }
+        } else {
+            val problem = when (state) {
+                ModelListUiState.MissingKey -> Res.string.settings_models_need_key
+                ModelListUiState.InvalidKey -> Res.string.settings_models_invalid_key
+                ModelListUiState.Failed -> Res.string.settings_models_failed
+                else -> null
             }
+            problem?.let { AppText(text = stringResource(it), color = theme.error, size = 14.sp) }
+            AppButton(
+                text = stringResource(Res.string.settings_models_show),
+                onClick = onShow,
+                style = AppButtonStyle.Tonal,
+            )
+        }
+    }
+}
 
-            else -> {
-                val problem = when (state) {
-                    ModelListUiState.MissingKey -> Res.string.settings_models_need_key
-                    ModelListUiState.InvalidKey -> Res.string.settings_models_invalid_key
-                    ModelListUiState.Failed -> Res.string.settings_models_failed
-                    else -> null
+/** A bottom sheet with a row for each model of the key: tapping one picks it and closes the sheet. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelSheet(models: List<String>, selected: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    val theme = AppTheme.current
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = theme.surface,
+        contentColor = theme.onSurface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp + navigationBarHeight()),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (models.isEmpty()) {
+                AppText(text = stringResource(Res.string.settings_models_none), color = theme.error, size = 14.sp)
+            }
+            for (model in models) {
+                val isSelected = model == selected
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isSelected) theme.primaryContainer else theme.surfaceVariant)
+                        .clickable(role = Role.RadioButton) { onPick(model) }
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    AppText(
+                        text = model,
+                        color = if (isSelected) theme.onPrimaryContainer else theme.onSurface,
+                        size = 15.sp,
+                        weight = if (isSelected) FontWeight.SemiBold else null,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (isSelected) AppIconImage(icon = AppIcon.Check, tint = theme.onPrimaryContainer, iconSize = 20.dp)
                 }
-                problem?.let { AppText(text = stringResource(it), color = theme.error, size = 14.sp) }
-                AppButton(
-                    text = stringResource(Res.string.settings_models_show),
-                    onClick = onShow,
-                    style = AppButtonStyle.Tonal,
-                )
             }
         }
     }
@@ -225,6 +251,7 @@ private fun Preview() {
             onApiKeyChange = {},
             onModelChange = {},
             onShowModels = {},
+            onDismissModels = {},
             onPickModel = {},
             onSave = {},
             onOpenDebug = {},
@@ -248,6 +275,7 @@ private fun PreviewModels() {
             onApiKeyChange = {},
             onModelChange = {},
             onShowModels = {},
+            onDismissModels = {},
             onPickModel = {},
             onSave = {},
             onOpenDebug = {},

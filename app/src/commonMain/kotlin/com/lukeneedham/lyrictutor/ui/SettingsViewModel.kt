@@ -35,6 +35,8 @@ class SettingsViewModel(
     /** Takes a model of the list: it is only kept when the user saves, like the other edits. */
     fun onPickModel(model: String) = _uiState.update { it.copy(model = model, isSaved = false, models = ModelListUiState.Idle) }
 
+    fun onDismissModels() = _uiState.update { it.copy(models = ModelListUiState.Idle) }
+
     fun onShowModels() {
         _uiState.update { it.copy(models = ModelListUiState.Loading) }
         viewModelScope.launch {

@@ -81,7 +81,7 @@ class SongViewModel(
         val page = wiktionaryCache[key] ?: wiktionaryLookup.find(selected.surface, selected.language).fold(
             onSuccess = { result ->
                 if (result != null) WiktionaryUiState.Found(result)
-                else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(selected.surface))
+                else WiktionaryUiState.NotFound(WiktionaryProtocol.searchUrl(WiktionaryProtocol.displayWord(selected.surface)))
             },
             onFailure = { WiktionaryUiState.Error },
         ).also { state ->
@@ -149,10 +149,14 @@ class SongViewModel(
 
     /** The page is painted with the colours of the cover once they are read; until then, and without a cover, it keeps the app's own. */
     private fun loadArtColors(track: TrackInfo) {
-        val coverUrl = track.coverUrl ?: return
+        val coverUrl = track.coverUrl
+        if (coverUrl == null) {
+            updateLoaded { it.copy(isArtResolved = true) }
+            return
+        }
         viewModelScope.launch {
-            val colors = artColorExtractor.extract(coverUrl) ?: return@launch
-            updateLoaded { it.copy(artColors = colors) }
+            val colors = artColorExtractor.extract(coverUrl)
+            updateLoaded { it.copy(artColors = colors, isArtResolved = true) }
         }
     }
 

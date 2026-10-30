@@ -53,6 +53,7 @@ private fun SongPageScreenshot() {
     )
     val state = SongUiState.Loaded(
         track = track,
+        isArtResolved = true,
         artColors = ArtColors(primary = Color(0xFF1F8A8A), secondary = Color(0xFFE8833A)),
         lyrics = LyricsUiState.Found(lyrics),
         annotations = annotations,
@@ -101,6 +102,7 @@ private fun SongPageTranslatingScreenshot() {
     )
     val state = SongUiState.Loaded(
         track = track,
+        isArtResolved = true,
         lyrics = LyricsUiState.Found(lyrics),
         annotations = mapOf(0 to LineAnnotation(index = 0, translation = "One two three four", language = "Spanish")),
         annotationStatus = AnnotationStatus.Loading,

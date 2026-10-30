@@ -12,6 +12,8 @@ sealed interface SongUiState {
         val lyrics: LyricsUiState,
         /** The two colours of the cover, once read: the song's page is painted with them. */
         val artColors: ArtColors? = null,
+        /** Whether reading the colours is over (with or without colours): until then the parts of the page painted with them wait. */
+        val isArtResolved: Boolean = false,
         /** The text in the paste box, or null when the box is closed. */
         val pasteText: String? = null,
         /** The translation and words of each line that has them, by the index of the line. */

@@ -12,6 +12,7 @@
     <string name="home_link_hint">Paste a Spotify song link</string>
     <string name="home_open_song">Open song</string>
     <string name="home_invalid_link">That is not a Spotify song link. Use Share, then Copy link, in Spotify.</string>
+    <string name="home_languages_title">Languages</string>
     <string name="home_recents_title">Recent songs</string>
     <string name="home_how_title">How it works</string>
     <string name="home_how_1_title">Pick a song</string>
@@ -29,8 +30,6 @@
     <string name="song_retry">Try again</string>
     <string name="song_play_on_spotify">Play on Spotify</string>
     <string name="song_translate_again">Translate again</string>
-    <string name="song_lyrics_title">Lyrics</string>
-    <string name="song_lyrics_hint">Tap any word to see what it means.</string>
 
     <!-- Lyrics -->
     <string name="lyrics_loading">Finding the lyrics…</string>
