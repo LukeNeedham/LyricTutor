@@ -27,7 +27,6 @@ import com.lukeneedham.lyrictutor.generated.resources.word_meanings_of
 import com.lukeneedham.lyrictutor.generated.resources.word_no_senses
 import com.lukeneedham.lyrictutor.generated.resources.word_open_wiktionary
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_error
-import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_loading
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_not_found
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppIconButton
@@ -77,16 +76,14 @@ internal fun WordSheetContent(
                     onClick = { onOpenUrl(wiktionaryUrl) },
                     tint = theme.primary,
                     background = theme.primaryContainer,
+                    containerSize = 36.dp,
+                    iconSize = 20.dp,
                 )
             }
         }
         when (wiktionary) {
-            WiktionaryUiState.Loading -> Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Spinner(diameter = 20.dp)
-                AppText(text = stringResource(Res.string.word_wiktionary_loading), color = theme.onSurfaceVariant, size = 15.sp)
+            WiktionaryUiState.Loading -> Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
+                Spinner(diameter = 32.dp)
             }
 
             WiktionaryUiState.Error ->
