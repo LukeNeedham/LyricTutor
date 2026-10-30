@@ -8,9 +8,12 @@ import com.lukeneedham.lyrictutor.data.art.ArtColorExtractor
 import com.lukeneedham.lyrictutor.data.DataStoreSettingsStore
 import com.lukeneedham.lyrictutor.data.KeystoreCipher
 import com.lukeneedham.lyrictutor.data.MIGRATION_1_2
+import com.lukeneedham.lyrictutor.data.MIGRATION_2_3
+import com.lukeneedham.lyrictutor.data.RoomWiktionaryPageCache
 import com.lukeneedham.lyrictutor.data.RoomSongCache
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import com.lukeneedham.lyrictutor.data.song.SongCache
+import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryPageCache
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -32,10 +35,11 @@ val androidModule = module {
         }
     }
     single { Room.databaseBuilder(androidContext(), AppDatabase::class.java, "lyrictutor.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build() }
     single { KeystoreCipher() }
     single<SettingsStore> { DataStoreSettingsStore(context = androidContext(), cipher = get()) }
     single<ArtColorExtractor> { CoilArtColorExtractor(context = androidContext()) }
+    single<WiktionaryPageCache> { RoomWiktionaryPageCache(dao = get<AppDatabase>().wiktionaryPageDao()) }
     single<SongCache> { RoomSongCache(dao = get<AppDatabase>().songDao()) }
 }

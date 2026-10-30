@@ -27,7 +27,7 @@ val appModule = module {
     single<LyricsSource> { LrclibLyricsSource(client = get()) }
     single { LyricsRepository(songCache = get(), source = get()) }
 
-    single<WiktionaryLookup> { WiktionaryClient(client = get()) }
+    single<WiktionaryLookup> { WiktionaryClient(client = get(), pageCache = get()) }
     single<ModelCatalog> { GeminiModelCatalog(client = get()) }
     single<PartOfSpeechChooser> { GeminiPartOfSpeechChooser(client = get(), settingsStore = get()) }
     single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
