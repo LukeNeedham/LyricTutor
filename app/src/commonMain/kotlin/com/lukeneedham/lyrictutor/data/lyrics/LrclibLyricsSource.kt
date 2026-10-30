@@ -63,7 +63,7 @@ class LrclibLyricsSource(private val client: HttpClient) : LyricsSource {
         }
         if (response.status == HttpStatusCode.NotFound) return null
         if (!response.status.isSuccess()) error("LRCLIB answered ${response.status}")
-        return LrclibTrack.parseOne(response.bodyAsText()).toLyrics()
+        return LrclibTrackDto.parseOne(response.bodyAsText()).toDomain()
     }
 
     private suspend fun search(track: TrackInfo, artist: String): Lyrics? {
@@ -73,8 +73,8 @@ class LrclibLyricsSource(private val client: HttpClient) : LyricsSource {
         }
         if (response.status == HttpStatusCode.NotFound) return null
         if (!response.status.isSuccess()) error("LRCLIB answered ${response.status}")
-        val results = LrclibTrack.parseList(response.bodyAsText())
-        return LrclibTrack.pickBest(results, track.durationSeconds)?.toLyrics()
+        val results = LrclibTrackDto.parseList(response.bodyAsText())
+        return LrclibTrackDto.pickBest(results, track.durationSeconds)?.toDomain()
     }
 
     /** One request at a time. A timeout, a dropped connection, a 429 or a 5xx is tried again a couple of times: LRCLIB is often slow on a cold lookup. */

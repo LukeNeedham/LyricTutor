@@ -31,6 +31,7 @@ private val backStackConfig = SavedStateConfiguration {
             subclass(Route.Debug::class, Route.Debug.serializer())
             subclass(Route.Logs::class, Route.Logs.serializer())
             subclass(Route.Crashes::class, Route.Crashes.serializer())
+            subclass(Route.Network::class, Route.Network.serializer())
         }
     }
 }

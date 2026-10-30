@@ -1,5 +1,8 @@
 # LyricTutor: MVP handover
 
+> **Superseded as the entry point by [`docs/handover.md`](handover.md)** (2026-10-30), which has the state of the app after the
+> first build session and the remaining work. This document is kept as the original plan and for its data-source notes.
+
 Read this first. It is the plan and the state of the app, written when the repo was set up, for the session that builds the MVP.
 Steps 0 to 3 of [section 10](#10-delivery-plan) are built and merged (state on 2026-10-30); section 3 describes the skeleton the app started from. Everything marked **verified** was checked
 (by running something or reading CI); everything marked **unverified** is a claim from a search or from memory, and is to be tested

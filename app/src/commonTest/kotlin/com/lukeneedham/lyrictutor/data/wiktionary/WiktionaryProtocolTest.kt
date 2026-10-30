@@ -105,7 +105,7 @@ class WiktionaryProtocolTest {
     }
 
     private fun entry(partOfSpeech: String, vararg definitions: String) =
-        WiktionaryProtocol.Entry(partOfSpeech, "Dutch", definitions.map { WiktionaryProtocol.Definition(it) })
+        WiktionaryEntryDto(partOfSpeech, "Dutch", definitions.map { WiktionaryDefinitionDto(it) })
 
     private val misspellingOf = """<span class="form-of-definition use-with-mention">misspelling of <span class="form-of-definition-link"><i><a href="/wiki/jouw#Dutch" title="jouw">jouw</a></i></span></span>"""
 
@@ -171,5 +171,13 @@ class WiktionaryProtocolTest {
         assertEquals("https://en.wiktionary.org/wiki/voy", WiktionaryProtocol.pageUrl("voy"))
         assertEquals("https://en.wiktionary.org/wiki/dos_mil#Middle_French", WiktionaryProtocol.pageUrl("dos mil", "Middle French"))
         assertEquals("https://en.wiktionary.org/w/index.php?search=voy", WiktionaryProtocol.searchUrl("voy"))
+    }
+
+    @Test
+    fun anEntryWithNothingInItIsReadWithoutCrashing() {
+        val entries = WiktionaryProtocol.parseEntries("""{"es":[{}]}""")
+        assertEquals(1, entries.size)
+        assertEquals(emptyList(), WiktionaryProtocol.senses(entries).flatMap { it.glosses })
+        assertEquals(emptyList(), WiktionaryProtocol.entriesFor(entries, "Dutch"))
     }
 }

@@ -127,7 +127,8 @@ class GeminiProtocolTest {
         assertTrue("\"responseMimeType\":\"text/x.enum\"" in body)
         assertTrue("\"enum\":[\"Noun\",\"Verb\"]" in body)
         assertTrue("een regel" in body && "dingen" in body && "Dutch" in body)
-        assertTrue("\"thinkingLevel\":\"low\"" in body)
+        // The question is a pick from a list: the least thinking there is. The translations keep "low"
+        assertTrue("\"thinkingLevel\":\"minimal\"" in body)
         assertTrue("thinkingLevel" !in GeminiProtocol.choiceRequestBody("x", "y", null, options, model = "gemini-2.5-flash").toString())
     }
 
@@ -153,5 +154,19 @@ class GeminiProtocolTest {
     fun anAnswerThatIsNotJsonFails() {
         val result = GeminiProtocol.parseResponse("""{"candidates":[{"content":{"parts":[{"text":"sorry, I cannot"}]}}]}""")
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun aLineWithoutAnIndexIsLeftOutAndTheRestIsKept() {
+        val body = """{"candidates":[{"content":{"parts":[{"text":"{\"lines\":[{\"translation\":\"No index\"},{\"index\":2,\"translation\":\"Kept\"}]}"}]}}]}"""
+        val lines = GeminiProtocol.parseResponse(body).getOrThrow()
+        assertEquals(listOf(LineAnnotation(index = 2, translation = "Kept")), lines)
+    }
+
+    @Test
+    fun emptyAnswersNeverThrow() {
+        assertEquals(emptyList(), GeminiProtocol.parseModels("{}"))
+        assertNull(GeminiProtocol.errorMessage("{}"))
+        assertNull(GeminiProtocol.parseUsage("{}"))
     }
 }
