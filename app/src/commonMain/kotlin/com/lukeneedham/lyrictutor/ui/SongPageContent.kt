@@ -77,7 +77,7 @@ internal fun SongPageContent(
     onClosePaste: () -> Unit,
     onRetryAnnotations: () -> Unit,
     onOpenSettings: () -> Unit,
-    onWordClick: (WordAnnotation) -> Unit,
+    onWordClick: (SelectedWord) -> Unit,
     onWordDismiss: () -> Unit,
 ) {
     val theme = AppTheme.current
@@ -126,7 +126,12 @@ internal fun SongPageContent(
                             )
                         }
                         itemsIndexed(lyrics.lyrics.lines) { index, line ->
-                            LyricLineRow(line = line, annotation = state.annotations[index], onWordClick = onWordClick)
+                            LyricLineRow(
+                                line = line,
+                                annotation = state.annotations[index],
+                                selectedToken = state.selectedWord?.takeIf { it.lineIndex == index }?.tokenIndex,
+                                onWordClick = { word, token -> onWordClick(SelectedWord(word, lineIndex = index, tokenIndex = token)) },
+                            )
                         }
                     }
 
@@ -145,7 +150,7 @@ internal fun SongPageContent(
             }
         }
         if (state is SongUiState.Loaded) WordSheet(
-                word = state.selectedWord,
+                word = state.selectedWord?.word,
                 wiktionary = state.wiktionary,
                 onOpenUrl = uriHandler::openUri,
                 onDismiss = onWordDismiss,
@@ -184,7 +189,12 @@ private fun Header(track: TrackInfo) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LyricLineRow(line: LyricLine, annotation: LineAnnotation?, onWordClick: (WordAnnotation) -> Unit) {
+private fun LyricLineRow(
+    line: LyricLine,
+    annotation: LineAnnotation?,
+    selectedToken: Int?,
+    onWordClick: (word: WordAnnotation, tokenIndex: Int) -> Unit,
+) {
     val theme = AppTheme.current
     val textStyle = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 18.sp, lineHeight = 26.sp)
     Column {
@@ -192,17 +202,23 @@ private fun LyricLineRow(line: LyricLine, annotation: LineAnnotation?, onWordCli
             BasicText(text = line.text, style = textStyle)
         } else {
             // Each word of the line that the model explained can be tapped; the others (and any it left out) are plain text
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (token in line.text.split(' ').filter { it.isNotEmpty() }) {
+            FlowRow {
+                for ((tokenIndex, token) in line.text.split(' ').filter { it.isNotEmpty() }.withIndex()) {
                     val word = annotation.words.firstOrNull { it.surface.normalizedWord() == token.normalizedWord() }
                     Box(
                         modifier = Modifier
                             .heightIn(min = 48.dp)
-                            .then(if (word != null) Modifier.clickable { onWordClick(word) } else Modifier),
+                            .padding(horizontal = 3.dp)
+                            .then(if (word != null) Modifier.clickable { onWordClick(word, tokenIndex) } else Modifier),
                         contentAlignment = Alignment.CenterStart,
                     ) {
+                        // The word whose sheet is open is marked, so it is clear which word the sheet is about
+                        val isSelected = tokenIndex == selectedToken
                         BasicText(
                             text = token,
+                            modifier = Modifier
+                                .then(if (isSelected) Modifier.background(theme.primary.copy(alpha = 0.3f), RoundedCornerShape(6.dp)) else Modifier)
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
                             style = if (word != null) textStyle.copy(color = theme.primary) else textStyle,
                         )
                     }
@@ -410,6 +426,26 @@ private fun PreviewAnnotated() {
         words = listOf(WordAnnotation(surface = "voy", lemma = "ir", meaning = "I go")),
     )
     PreviewContent(SongUiState.Loaded(previewTrack, LyricsUiState.Found(lyrics), annotations = mapOf(0 to annotation)))
+}
+
+@Preview
+@Composable
+private fun PreviewWordSelected() {
+    val lyrics = Lyrics(
+        lines = listOf(LyricLine("Si me voy, me voy contigo")),
+        source = LyricsSourceKind.Lrclib,
+    )
+    val voy = WordAnnotation(surface = "voy", language = "Spanish", lemma = "ir", partOfSpeech = "verb", meaning = "I go")
+    val annotation = LineAnnotation(index = 0, translation = "If I go, I go with you", words = listOf(voy))
+    PreviewContent(
+        SongUiState.Loaded(
+            track = previewTrack,
+            lyrics = LyricsUiState.Found(lyrics),
+            annotations = mapOf(0 to annotation),
+            selectedWord = SelectedWord(word = voy, lineIndex = 0, tokenIndex = 2),
+            wiktionary = WiktionaryUiState.Found("voy", "https://en.wiktionary.org/wiki/voy#Spanish"),
+        ),
+    )
 }
 
 @Preview

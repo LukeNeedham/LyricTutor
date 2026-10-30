@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
-import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.song.SongCache
@@ -54,11 +53,12 @@ class SongViewModel(
         annotate(loaded.track, lyrics)
     }
 
-    fun onWordClick(word: WordAnnotation) {
+    fun onWordClick(selected: SelectedWord) {
+        val word = selected.word
         wiktionaryJob?.cancel()
         val key = "${word.language}|${word.surface.lowercase()}|${word.lemma}"
         val known = wiktionaryCache[key]
-        updateLoaded { it.copy(selectedWord = word, wiktionary = known ?: WiktionaryUiState.Loading) }
+        updateLoaded { it.copy(selectedWord = selected, wiktionary = known ?: WiktionaryUiState.Loading) }
         if (known != null) return
         wiktionaryJob = viewModelScope.launch {
             val state = wiktionaryLookup.find(word).fold(
@@ -70,7 +70,7 @@ class SongViewModel(
             )
             // A failure is not kept, so that tapping the word again asks again
             if (state !is WiktionaryUiState.Error) wiktionaryCache[key] = state
-            updateLoaded { if (it.selectedWord == word) it.copy(wiktionary = state) else it }
+            updateLoaded { if (it.selectedWord == selected) it.copy(wiktionary = state) else it }
         }
     }
 

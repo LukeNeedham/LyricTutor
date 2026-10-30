@@ -1,7 +1,6 @@
 package com.lukeneedham.lyrictutor.ui
 
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
-import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 
 sealed interface SongUiState {
@@ -18,7 +17,7 @@ sealed interface SongUiState {
         /** Why the last annotation attempt failed, for [AnnotationStatus.Failed]: shown as it is, to help find the cause. */
         val annotationDetail: String? = null,
         /** The word whose sheet is open, or null. */
-        val selectedWord: WordAnnotation? = null,
+        val selectedWord: SelectedWord? = null,
         /** The Wiktionary link of [selectedWord]. */
         val wiktionary: WiktionaryUiState = WiktionaryUiState.Loading,
     ) : SongUiState
