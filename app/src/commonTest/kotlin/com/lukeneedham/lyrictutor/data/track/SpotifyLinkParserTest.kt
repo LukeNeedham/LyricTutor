@@ -29,6 +29,13 @@ class SpotifyLinkParserTest {
     }
 
     @Test
+    fun buildsTheLinkThatOpensATrack() {
+        assertEquals("https://open.spotify.com/track/$id", SpotifyLinkParser.trackUrl(id))
+        // The link it builds is one it reads back
+        assertEquals(id, SpotifyLinkParser.parseTrackId(SpotifyLinkParser.trackUrl(id)))
+    }
+
+    @Test
     fun rejectsOtherText() {
         assertNull(SpotifyLinkParser.parseTrackId(""))
         assertNull(SpotifyLinkParser.parseTrackId("hello"))

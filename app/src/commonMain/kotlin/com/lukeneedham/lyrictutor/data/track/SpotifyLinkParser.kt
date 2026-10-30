@@ -7,6 +7,9 @@ object SpotifyLinkParser {
     private val trackUri = Regex("spotify:track:($ID)")
     private val bareId = Regex("^$ID$")
 
+    /** The link that opens a track in the Spotify app (or in the browser, when the app is not installed). */
+    fun trackUrl(trackId: String): String = "https://open.spotify.com/track/$trackId"
+
     /** The track id in [text] (a link, a share text that contains a link, a `spotify:track:` URI or a bare id), or null. */
     fun parseTrackId(text: String): String? {
         val trimmed = text.trim()

@@ -45,6 +45,8 @@ import com.lukeneedham.lyrictutor.data.annotation.WordAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
+import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.annotation_daily_limit
@@ -68,6 +70,7 @@ import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import com.lukeneedham.lyrictutor.generated.resources.song_error_network
 import com.lukeneedham.lyrictutor.generated.resources.song_error_unreadable
 import com.lukeneedham.lyrictutor.generated.resources.song_loading
+import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
 import com.lukeneedham.lyrictutor.generated.resources.song_retry
 import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
@@ -93,6 +96,14 @@ internal fun SongPageContent(
     val theme = AppTheme.current
     val uriHandler = LocalUriHandler.current
     var sheetHeightPx by remember { mutableIntStateOf(0) }
+    // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
+    fun playOnSpotify(trackId: String) {
+        try {
+            uriHandler.openUri(SpotifyLinkParser.trackUrl(trackId))
+        } catch (e: Exception) {
+            Logger.e("Could not open the song in Spotify", e)
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -135,7 +146,7 @@ internal fun SongPageContent(
                     contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + with(LocalDensity.current) { sheetHeight.toDp() }),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    item { Header(state.track) }
+                    item { Header(state.track, onPlay = { playOnSpotify(state.track.trackId) }) }
                     when (val lyrics = state.lyrics) {
                         LyricsUiState.Loading -> item { Message(text = stringResource(Res.string.lyrics_loading)) }
 
@@ -192,7 +203,7 @@ internal fun SongPageContent(
 }
 
 @Composable
-private fun Header(track: TrackInfo) {
+private fun Header(track: TrackInfo, onPlay: () -> Unit) {
     val theme = AppTheme.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         AsyncImage(
@@ -217,6 +228,7 @@ private fun Header(track: TrackInfo) {
             text = track.artists.joinToString(", "),
             style = TextStyle(color = theme.onBackground, fontFamily = theme.fontFamily, fontSize = 16.sp, lineHeight = 24.sp),
         )
+        Button(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay)
     }
 }
 

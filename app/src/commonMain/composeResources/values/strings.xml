@@ -55,5 +55,6 @@
     <string name="settings_models_need_key">Enter your API key first.</string>
     <string name="settings_models_invalid_key">Gemini refused this key.</string>
     <string name="settings_models_failed">Could not get the models. Check your connection.</string>
+    <string name="song_play_on_spotify">Play on Spotify</string>
     <string name="song_translate_again">Translate again</string>
 </resources>
