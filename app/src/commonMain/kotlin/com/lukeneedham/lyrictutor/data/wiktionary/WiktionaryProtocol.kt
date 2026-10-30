@@ -1,31 +1,19 @@
 package com.lukeneedham.lyrictutor.data.wiktionary
 
+import com.lukeneedham.lyrictutor.data.apiJson
 import io.ktor.http.encodeURLParameter
 import io.ktor.http.encodeURLPath
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 
 /**
  * The pieces of the Wiktionary lookup that need no network: reading the answer of the REST `page/definition/<word>` endpoint, and the
  * words and links. The answer is an object by language code ("es", "nl", "other") of entries, one for each part of speech.
  */
 object WiktionaryProtocol {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-
-    /** One part of speech of one language on a page: [definitions] are HTML. */
-    @Serializable
-    data class Entry(
-        val partOfSpeech: String = "",
-        val language: String = "",
-        val definitions: List<Definition> = emptyList(),
-    )
-
-    @Serializable
-    data class Definition(val definition: String = "")
+    private val json = apiJson
 
     private const val MAX_GLOSSES = 4
     private const val MAX_SENSES = 3
@@ -38,8 +26,8 @@ object WiktionaryProtocol {
     private val firstLinkTitle = Regex("title=\"([^\"]+)\"")
 
     /** The entries of every language on the page, in the order of the answer; empty when the answer is not one. */
-    fun parseEntries(body: String): List<Entry> = try {
-        json.decodeFromString(MapSerializer(String.serializer(), ListSerializer(Entry.serializer())), body).values.flatten()
+    fun parseEntries(body: String): List<WiktionaryEntryDto> = try {
+        json.decodeFromString(MapSerializer(String.serializer(), ListSerializer(WiktionaryEntryDto.serializer())), body).values.flatten()
     } catch (e: SerializationException) {
         emptyList()
     } catch (e: IllegalArgumentException) {
@@ -50,7 +38,7 @@ object WiktionaryProtocol {
      * The entries to read for [language] (its English name): those of that language; when the page has none of it but only one
      * language, that language's. Empty when there are none to choose.
      */
-    fun entriesFor(entries: List<Entry>, language: String?): List<Entry> {
+    fun entriesFor(entries: List<WiktionaryEntryDto>, language: String?): List<WiktionaryEntryDto> {
         if (!language.isNullOrBlank()) {
             entries.filter { it.language.equals(language.trim(), ignoreCase = true) }.takeIf { it.isNotEmpty() }?.let { return it }
         }
@@ -95,7 +83,7 @@ object WiktionaryProtocol {
      * The senses of [entries]. A misspelling of another word ("misspelling of jouw") is left out: it is not what the word is, and it is
      * of no use to a learner. Only when that leaves nothing, because the page has nothing else, are the misspellings shown.
      */
-    fun senses(entries: List<Entry>): List<WiktionarySense> {
+    fun senses(entries: List<WiktionaryEntryDto>): List<WiktionarySense> {
         val withoutMisspellings = entries.map { sense(it, dropMisspellings = true) }.filter { it.hasContent() }
         val chosen = withoutMisspellings.ifEmpty { entries.map { sense(it, dropMisspellings = false) }.filter { it.hasContent() } }
         return chosen.take(MAX_SENSES)
@@ -109,17 +97,17 @@ object WiktionaryProtocol {
      * The sense of an entry. An entry with meanings of its own gives them in the order of the page. An entry that is only a form of
      * another word gives how it is formed, and the meanings of the other are added later.
      */
-    private fun sense(entry: Entry, dropMisspellings: Boolean): WiktionarySense {
-        val parsed = entry.definitions.mapNotNull { parse(it.definition) }.filterNot { dropMisspellings && isMisspelling(it) }
+    private fun sense(entry: WiktionaryEntryDto, dropMisspellings: Boolean): WiktionarySense {
+        val parsed = entry.definitions.orEmpty().mapNotNull { dto -> dto.definition?.let { parse(it) } }.filterNot { dropMisspellings && isMisspelling(it) }
         if (parsed.any { it is Parsed.Meaning }) {
             return WiktionarySense(
-                partOfSpeech = entry.partOfSpeech,
+                partOfSpeech = entry.partOfSpeech.orEmpty(),
                 glosses = parsed.filter { it !is Parsed.Detail }.map { it.text }.take(MAX_GLOSSES),
             )
         }
         val forms = parsed.filterIsInstance<Parsed.FormOf>()
         return WiktionarySense(
-            partOfSpeech = entry.partOfSpeech,
+            partOfSpeech = entry.partOfSpeech.orEmpty(),
             glosses = emptyList(),
             formOf = forms.firstOrNull()?.text,
             formDetails = (forms.drop(1) + parsed.filterIsInstance<Parsed.Detail>()).map { it.text }.distinct(),
@@ -128,8 +116,8 @@ object WiktionaryProtocol {
     }
 
     /** The meanings of an entry, as plain text: the first few, not those that are a "form of" another word. */
-    fun glosses(entry: Entry): List<String> =
-        entry.definitions.mapNotNull { parse(it.definition) }.filterIsInstance<Parsed.Meaning>().map { it.text }.take(MAX_GLOSSES)
+    fun glosses(entry: WiktionaryEntryDto): List<String> =
+        entry.definitions.orEmpty().mapNotNull { dto -> dto.definition?.let { parse(it) } }.filterIsInstance<Parsed.Meaning>().map { it.text }.take(MAX_GLOSSES)
 
     /** Takes the HTML of a definition to plain text: tags and style blocks gone, entities read, spaces collapsed. */
     fun toPlainText(html: String): String =

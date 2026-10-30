@@ -1,9 +1,9 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
+import com.lukeneedham.lyrictutor.data.apiJson
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -20,7 +20,7 @@ object GeminiProtocol {
     private const val MAX_OUTPUT_TOKENS = 16_384
     private const val CHOICE_MAX_OUTPUT_TOKENS = 512
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
+    private val json = apiJson
 
     fun prompt(song: TrackInfo, lines: List<AnnotationLine>): String = buildString {
         appendLine("You are a language tutor. The user is learning from the lyrics of the song \"${song.title}\" by ${song.artists.joinToString(", ")}.")
@@ -103,7 +103,7 @@ object GeminiProtocol {
 
     /** The option an answer to [choiceRequestBody] names, or null when it names none (compared without case or quotes). */
     fun parseChoice(body: String, options: List<String>): String? = try {
-        val text = json.decodeFromString(Response.serializer(), body).candidates.firstOrNull()
+        val text = json.decodeFromString(GeminiResponseDto.serializer(), body).candidates.orEmpty().firstOrNull()
             ?.content?.parts?.mapNotNull { it.text }?.joinToString("")?.trim()?.trim('"', '\'')?.trim()
         options.firstOrNull { it.equals(text, ignoreCase = true) }
     } catch (e: IllegalArgumentException) {
@@ -151,7 +151,7 @@ object GeminiProtocol {
 
     /** The message of an error answer (`{"error":{"message":"..."}}`), or null when the body is not one. */
     fun errorMessage(body: String): String? = try {
-        json.decodeFromString(ErrorResponse.serializer(), body).error?.message
+        json.decodeFromString(GeminiErrorResponseDto.serializer(), body).error?.message
     } catch (e: IllegalArgumentException) {
         null
     }
@@ -161,7 +161,7 @@ object GeminiProtocol {
 
     /** The tokens an answer used, or null when the answer does not say. */
     fun parseUsage(body: String): TokenUsage? = try {
-        json.decodeFromString(Response.serializer(), body).usageMetadata?.let { usage ->
+        json.decodeFromString(GeminiResponseDto.serializer(), body).usageMetadata?.let { usage ->
             TokenUsage(
                 input = usage.promptTokenCount ?: 0,
                 output = usage.candidatesTokenCount ?: 0,
@@ -174,9 +174,9 @@ object GeminiProtocol {
 
     /** The models of a `models` list answer that can answer a prompt (`generateContent`), as the codes to put in the request. */
     fun parseModels(body: String): List<String> = try {
-        json.decodeFromString(ModelList.serializer(), body).models
-            .filter { "generateContent" in it.supportedGenerationMethods }
-            .map { it.name.removePrefix("models/") }
+        json.decodeFromString(GeminiModelListDto.serializer(), body).models.orEmpty()
+            .filter { "generateContent" in it.supportedGenerationMethods.orEmpty() }
+            .mapNotNull { it.name?.removePrefix("models/") }
             .filter { it.startsWith("gemini") }
             .sorted()
     } catch (e: IllegalArgumentException) {
@@ -185,13 +185,13 @@ object GeminiProtocol {
 
     /** The annotations in a `generateContent` response body. Fails with [AnnotationException.Failed] when there is no usable answer. */
     fun parseResponse(body: String): Result<List<LineAnnotation>> = try {
-        val response = json.decodeFromString(Response.serializer(), body)
-        val candidate = response.candidates.firstOrNull()
+        val response = json.decodeFromString(GeminiResponseDto.serializer(), body)
+        val candidate = response.candidates.orEmpty().firstOrNull()
         val text = candidate?.content?.parts?.mapNotNull { it.text }?.joinToString("")
         if (text.isNullOrBlank()) {
             Result.failure(AnnotationException.Failed("No answer from Gemini (finish reason: ${candidate?.finishReason ?: "none"})"))
         } else {
-            Result.success(json.decodeFromString(Batch.serializer(), text).lines)
+            Result.success(json.decodeFromString(GeminiBatchDto.serializer(), text).lines.orEmpty().mapNotNull { it.toDomain() })
         }
     } catch (e: SerializationException) {
         Result.failure(AnnotationException.Failed("Gemini's answer could not be read", e))
@@ -200,32 +200,61 @@ object GeminiProtocol {
     }
 
     @Serializable
-    private data class ModelList(val models: List<ModelDto> = emptyList())
+    private data class GeminiModelListDto(val models: List<GeminiModelDto>? = null)
 
     @Serializable
-    private data class ModelDto(val name: String = "", val supportedGenerationMethods: List<String> = emptyList())
+    private data class GeminiModelDto(val name: String? = null, val supportedGenerationMethods: List<String>? = null)
 
     @Serializable
-    private data class ErrorResponse(val error: ErrorBody? = null)
+    private data class GeminiErrorResponseDto(val error: GeminiErrorBodyDto? = null)
 
     @Serializable
-    private data class ErrorBody(val message: String? = null)
+    private data class GeminiErrorBodyDto(val message: String? = null)
 
     @Serializable
-    private data class Response(val candidates: List<Candidate> = emptyList(), val usageMetadata: Usage? = null)
+    private data class GeminiResponseDto(val candidates: List<GeminiCandidateDto>? = null, val usageMetadata: GeminiUsageDto? = null)
 
     @Serializable
-    private data class Usage(val promptTokenCount: Int? = null, val candidatesTokenCount: Int? = null, val thoughtsTokenCount: Int? = null)
+    private data class GeminiUsageDto(val promptTokenCount: Int? = null, val candidatesTokenCount: Int? = null, val thoughtsTokenCount: Int? = null)
 
     @Serializable
-    private data class Candidate(val content: Content? = null, val finishReason: String? = null)
+    private data class GeminiCandidateDto(val content: GeminiContentDto? = null, val finishReason: String? = null)
 
     @Serializable
-    private data class Content(val parts: List<Part> = emptyList())
+    private data class GeminiContentDto(val parts: List<GeminiPartDto>? = null)
 
     @Serializable
-    private data class Part(val text: String? = null)
+    private data class GeminiPartDto(val text: String? = null)
 
     @Serializable
-    private data class Batch(val lines: List<LineAnnotation> = emptyList())
+    private data class GeminiBatchDto(val lines: List<LineAnnotationDto>? = null)
+
+    /** A line as the model writes it: the model can leave any field out. */
+    @Serializable
+    private data class LineAnnotationDto(
+        val index: Int? = null,
+        val translation: String? = null,
+        val language: String? = null,
+        val otherLanguages: List<WordLanguageDto>? = null,
+    )
+
+    @Serializable
+    private data class WordLanguageDto(val word: String? = null, val language: String? = null)
+
+    /** Null when the model gave no index: the line cannot be matched with a line of the song. */
+    private fun LineAnnotationDto.toDomain(): LineAnnotation? {
+        val index = index ?: return null
+        return LineAnnotation(
+            index = index,
+            translation = translation,
+            language = language,
+            otherLanguages = otherLanguages.orEmpty().mapNotNull { it.toDomain() },
+        )
+    }
+
+    private fun WordLanguageDto.toDomain(): WordLanguage? {
+        val word = word ?: return null
+        val language = language ?: return null
+        return WordLanguage(word, language)
+    }
 }

@@ -154,4 +154,18 @@ class GeminiProtocolTest {
         val result = GeminiProtocol.parseResponse("""{"candidates":[{"content":{"parts":[{"text":"sorry, I cannot"}]}}]}""")
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())
     }
+
+    @Test
+    fun aLineWithoutAnIndexIsLeftOutAndTheRestIsKept() {
+        val body = """{"candidates":[{"content":{"parts":[{"text":"{\"lines\":[{\"translation\":\"No index\"},{\"index\":2,\"translation\":\"Kept\"}]}"}]}}]}"""
+        val lines = GeminiProtocol.parseResponse(body).getOrThrow()
+        assertEquals(listOf(LineAnnotation(index = 2, translation = "Kept")), lines)
+    }
+
+    @Test
+    fun emptyAnswersNeverThrow() {
+        assertEquals(emptyList(), GeminiProtocol.parseModels("{}"))
+        assertNull(GeminiProtocol.errorMessage("{}"))
+        assertNull(GeminiProtocol.parseUsage("{}"))
+    }
 }

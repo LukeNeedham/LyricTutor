@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import com.lukeneedham.common.ui.CrashesPage
 import com.lukeneedham.common.ui.DebugPage
 import com.lukeneedham.common.ui.LogsPage
+import com.lukeneedham.common.ui.NetworkPage
 
 /** Calls the page of [route], with the navigation as lambdas. The only place that calls a page. */
 @Composable
@@ -28,10 +29,13 @@ fun Router(backStack: NavBackStack<NavKey>, route: Route) {
             onBack = ::onBack,
             onOpenLogs = { navigateTo(Route.Logs) },
             onOpenCrashes = { navigateTo(Route.Crashes) },
+            onOpenNetwork = { navigateTo(Route.Network) },
         )
 
         Route.Logs -> LogsPage(onBack = ::onBack)
 
         Route.Crashes -> CrashesPage(onBack = ::onBack)
+
+        Route.Network -> NetworkPage(onBack = ::onBack)
     }
 }
