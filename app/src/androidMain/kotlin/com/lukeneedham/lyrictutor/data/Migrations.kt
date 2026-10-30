@@ -13,3 +13,13 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+/** Adds the cache of Wiktionary answers. Everything else stays. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `wiktionary_page` (" +
+                "`title` TEXT NOT NULL, `body` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`title`))",
+        )
+    }
+}

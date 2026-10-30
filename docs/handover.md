@@ -49,7 +49,7 @@ Kotlin Multiplatform, Android target only: shared code in `commonMain`, Android-
 4. **Tapping a word**: every word of a line is tappable. `loadWiktionary`: the English Wiktionary REST endpoint
    `page/definition/<word>` (user-agent set), candidates = the word as written, then lower case; the language is the line's (or the word's
    own in `otherLanguages`); `WiktionaryProtocol.senses` reads the entries (see below); a form of another word costs one more request for
-   the meanings of its dictionary form. Results are kept per word and language while the page is open (not on disk).
+   the meanings of its dictionary form. Results are kept per word and language while the page is open. **The raw answer for each page title (and the lack of a page) is also kept on disk for good** (`WiktionaryPageCache`, Room table `wiktionary_page`, version 3 + `MIGRATION_2_3`), so a page is asked for once across songs and sessions; failed requests are not kept. Not yet unit-tested (no Ktor mock engine in the build).
 5. **Which part of speech**: if the page has several, `PartOfSpeechChooser` (Gemini, enum output `text/x.enum`, options = the page's own
    labels) says which one the word is used as in its line; only that sense is shown. With no key, a failure or no match, every sense is shown.
 6. The sheet has a fixed height (half the screen), the tapped word is highlighted and the song scrolls so it stays above the sheet. The
@@ -156,7 +156,7 @@ In the order I would do it. Each is its own PR.
 5. **Cost**: record the tokens of a whole song; try `minimal` thinking for the translations on one or two songs (quality matters more
    there); consider a "meaning in this line" button that asks the AI about **one word on demand** (cheap, only when tapped).
 6. **Model retired or wrong**: a 404 from `generateContent` for the model name should say "model not found" and point to the picker.
-7. **Wiktionary**: keep results on disk (offline words), hide other low-value labels if the user asks, handle entries with no section for
+7. **Wiktionary**: hide other low-value labels if the user asks, handle entries with no section for
    the language better, and add fixtures per language as the user finds odd words. Spanish verbs ("come", "vino") and Dutch separable
    verbs are good tests.
 8. **Lyrics coverage test**: the user gives 20 to 30 song links; read each as the app does, ask LRCLIB, report found or missing and
