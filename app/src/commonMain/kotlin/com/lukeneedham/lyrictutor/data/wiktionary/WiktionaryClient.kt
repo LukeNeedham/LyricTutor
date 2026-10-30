@@ -31,7 +31,7 @@ class WiktionaryClient(private val client: HttpClient) : WiktionaryLookup {
             val entries = WiktionaryProtocol.entriesFor(fetchEntries(title), language)
             if (entries.isEmpty()) continue
 
-            val languageName = entries.first().language
+            val languageName = entries.first().language.orEmpty()
             val senses = WiktionaryProtocol.senses(entries).map { sense -> withMeaningsOfLemma(sense, languageName) }
             return WiktionaryResult(
                 title = title,
@@ -54,7 +54,7 @@ class WiktionaryClient(private val client: HttpClient) : WiktionaryLookup {
     }
 
     /** The entries of a page; empty when there is no such page. */
-    private suspend fun fetchEntries(title: String): List<WiktionaryProtocol.Entry> {
+    private suspend fun fetchEntries(title: String): List<WiktionaryEntryDto> {
         val response = client.get("https://en.wiktionary.org/api/rest_v1/page/definition/${title.encodeURLPath()}") {
             header(HttpHeaders.UserAgent, USER_AGENT)
         }

@@ -4,7 +4,7 @@ kotlin = "2.2.21"
 # KSP is versioned as <Kotlin version>-<KSP version>: bump it with Kotlin
 ksp = "2.2.21-2.0.4"
 compose-plugin = "1.10.3"
-common = "0.8.0"
+common = "0.9.0"
 activityCompose = "1.13.0"
 koin = "4.2.2"
 navigation3 = "1.1.1"
