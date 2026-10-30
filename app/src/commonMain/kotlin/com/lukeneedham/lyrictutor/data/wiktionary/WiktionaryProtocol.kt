@@ -92,29 +92,40 @@ object WiktionaryProtocol {
     }
 
     /**
-     * The senses of [entries]: a sense for each. An entry with meanings of its own gives them in the order of the page, a "misspelling of
-     * x" among them like any other (it is not what the word is). An entry that is only a form of another word gives how it is formed,
-     * and the meanings of the other are added later.
+     * The senses of [entries]. A misspelling of another word ("misspelling of jouw") is left out: it is not what the word is, and it is
+     * of no use to a learner. Only when that leaves nothing, because the page has nothing else, are the misspellings shown.
      */
-    fun senses(entries: List<Entry>): List<WiktionarySense> =
-        entries.take(MAX_SENSES).map { entry ->
-            val parsed = entry.definitions.mapNotNull { parse(it.definition) }
-            if (parsed.any { it is Parsed.Meaning }) {
-                WiktionarySense(
-                    partOfSpeech = entry.partOfSpeech,
-                    glosses = parsed.filter { it !is Parsed.Detail }.map { it.text }.take(MAX_GLOSSES),
-                )
-            } else {
-                val forms = parsed.filterIsInstance<Parsed.FormOf>()
-                WiktionarySense(
-                    partOfSpeech = entry.partOfSpeech,
-                    glosses = emptyList(),
-                    formOf = forms.firstOrNull()?.text,
-                    formDetails = (forms.drop(1) + parsed.filterIsInstance<Parsed.Detail>()).map { it.text }.distinct(),
-                    lemma = forms.firstOrNull()?.lemma,
-                )
-            }
+    fun senses(entries: List<Entry>): List<WiktionarySense> {
+        val withoutMisspellings = entries.map { sense(it, dropMisspellings = true) }.filter { it.hasContent() }
+        val chosen = withoutMisspellings.ifEmpty { entries.map { sense(it, dropMisspellings = false) }.filter { it.hasContent() } }
+        return chosen.take(MAX_SENSES)
+    }
+
+    private fun WiktionarySense.hasContent() = glosses.isNotEmpty() || formOf != null
+
+    private fun isMisspelling(parsed: Parsed) = "misspelling of" in parsed.text.lowercase()
+
+    /**
+     * The sense of an entry. An entry with meanings of its own gives them in the order of the page. An entry that is only a form of
+     * another word gives how it is formed, and the meanings of the other are added later.
+     */
+    private fun sense(entry: Entry, dropMisspellings: Boolean): WiktionarySense {
+        val parsed = entry.definitions.mapNotNull { parse(it.definition) }.filterNot { dropMisspellings && isMisspelling(it) }
+        if (parsed.any { it is Parsed.Meaning }) {
+            return WiktionarySense(
+                partOfSpeech = entry.partOfSpeech,
+                glosses = parsed.filter { it !is Parsed.Detail }.map { it.text }.take(MAX_GLOSSES),
+            )
         }
+        val forms = parsed.filterIsInstance<Parsed.FormOf>()
+        return WiktionarySense(
+            partOfSpeech = entry.partOfSpeech,
+            glosses = emptyList(),
+            formOf = forms.firstOrNull()?.text,
+            formDetails = (forms.drop(1) + parsed.filterIsInstance<Parsed.Detail>()).map { it.text }.distinct(),
+            lemma = forms.firstOrNull()?.lemma,
+        )
+    }
 
     /** The meanings of an entry, as plain text: the first few, not those that are a "form of" another word. */
     fun glosses(entry: Entry): List<String> =

@@ -98,15 +98,34 @@ class WiktionaryProtocolTest {
     """.trimIndent().replace("\n", "")
 
     @Test
-    fun anEntryWithAMeaningAndAMisspellingKeepsTheOrderOfThePage() {
+    fun aMisspellingIsLeftOutOfAnEntryThatHasAMeaning() {
         val pronoun = WiktionaryProtocol.senses(WiktionaryProtocol.parseEntries(jou)).first { it.partOfSpeech == "Pronoun" }
-        // The misspelling is not what the word is: it is a line among the meanings, not the headline
         assertNull(pronoun.formOf)
-        assertNull(pronoun.lemma)
-        assertEquals(
-            listOf("you; second-person singular objective personal pronoun", "misspelling of jouw (“your”)"),
-            pronoun.glosses,
-        )
+        assertEquals(listOf("you; second-person singular objective personal pronoun"), pronoun.glosses)
+    }
+
+    private fun entry(partOfSpeech: String, vararg definitions: String) =
+        WiktionaryProtocol.Entry(partOfSpeech, "Dutch", definitions.map { WiktionaryProtocol.Definition(it) })
+
+    private val misspellingOf = """<span class="form-of-definition use-with-mention">misspelling of <span class="form-of-definition-link"><i><a href="/wiki/jouw#Dutch" title="jouw">jouw</a></i></span></span>"""
+
+    @Test
+    fun anEntryThatIsOnlyAMisspellingIsLeftOutWhenThePageHasSomethingElse() {
+        val senses = WiktionaryProtocol.senses(listOf(entry("Noun", misspellingOf), entry("Verb", "to <b>go</b>")))
+        assertEquals(listOf("Verb"), senses.map { it.partOfSpeech })
+    }
+
+    @Test
+    fun aMisspellingIsShownWhenItIsAllThePageHas() {
+        val sense = WiktionaryProtocol.senses(listOf(entry("Noun", misspellingOf))).single()
+        assertEquals("misspelling of jouw", sense.formOf)
+        assertEquals("jouw", sense.lemma)
+    }
+
+    @Test
+    fun aMisspellingMeaningIsShownWhenItIsTheOnlyMeaning() {
+        val sense = WiktionaryProtocol.senses(listOf(entry("Noun", "misspelling of <i>x</i>"))).single()
+        assertEquals(listOf("misspelling of x"), sense.glosses)
     }
 
     @Test
