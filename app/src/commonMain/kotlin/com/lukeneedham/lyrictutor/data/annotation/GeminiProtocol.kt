@@ -88,7 +88,7 @@ object GeminiProtocol {
             // A few tokens are enough for the answer; the room left is for the thinking that counts against the cap
             put("maxOutputTokens", CHOICE_MAX_OUTPUT_TOKENS)
             if (model.startsWith("gemini-3")) {
-                putJsonObject("thinkingConfig") { put("thinkingLevel", "low") }
+                putJsonObject("thinkingConfig") { put("thinkingLevel", "minimal") }
             }
         }
         putJsonArray("safetySettings") {

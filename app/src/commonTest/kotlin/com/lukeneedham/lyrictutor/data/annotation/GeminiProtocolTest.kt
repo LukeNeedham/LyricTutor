@@ -127,7 +127,8 @@ class GeminiProtocolTest {
         assertTrue("\"responseMimeType\":\"text/x.enum\"" in body)
         assertTrue("\"enum\":[\"Noun\",\"Verb\"]" in body)
         assertTrue("een regel" in body && "dingen" in body && "Dutch" in body)
-        assertTrue("\"thinkingLevel\":\"low\"" in body)
+        // The question is a pick from a list: the least thinking there is. The translations keep "low"
+        assertTrue("\"thinkingLevel\":\"minimal\"" in body)
         assertTrue("thinkingLevel" !in GeminiProtocol.choiceRequestBody("x", "y", null, options, model = "gemini-2.5-flash").toString())
     }
 
