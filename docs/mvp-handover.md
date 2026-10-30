@@ -245,6 +245,29 @@ Later, **Wiktionary** for conjugation tables and etymologies (for example the wi
 attribution; its bulk download location was not confirmed), with the LLM only writing the memory hook that links the real etymology to
 English cognates.
 
+### 8b. What the AI does now, and what Wiktionary does (step 4)
+
+To keep the AI cost low, the AI is asked for the translation of each line and almost nothing else. Everything about a single word comes from
+Wiktionary when the user taps it (free, and only for the words tapped).
+
+| Information | Source |
+|---|---|
+| Translation of the line | AI (one answer per line) |
+| Language of the line, and the words of another language | AI (a short tag per line) |
+| Splitting a line into words | the app |
+| Dictionary form, part of speech, how the word is formed ("first-person singular present indicative of ir") | Wiktionary: the REST `page/definition/<word>` endpoint; an inflected word's entry holds a "form of" definition with a link to its dictionary form |
+| Meanings | Wiktionary: the first meanings of the word, or of its dictionary form (one more request) |
+| Slang and elisions ("pa'" is an apocopic form of "para") | Wiktionary, when the word has an entry |
+| Where it comes from | a link to the Wiktionary page, at the language section |
+| English cognates | dropped |
+
+Not covered: the meaning in this particular line (the AI no longer says), and phrases or idioms of several words. A "meaning in this line" button
+that asks the AI about one word on demand is possible later.
+
+Verified on 2026-10-30 against real answers of the endpoint for `voy`, `gewoon` and `pa'` (pasted by the user): the answer is an object by
+language code of entries with `partOfSpeech`, `language` and `definitions[].definition` (HTML); a form of another word has a
+`form-of-definition-link` span whose first link's `title` is the dictionary form. Other templates (other languages) are unverified.
+
 ## 9. Pages, data and structure
 
 | Page | Route | Job |
@@ -274,7 +297,7 @@ Each step is a PR to `main`, small enough to fix from the CI log alone. Step 0 c
 | **2. Lyrics and the Song page** (done) | The LRCLIB client and cache, the paste fallback, title cleaning; `SongPage` with the cover art, the title and the lyrics by line; screenshot |
 | **3. Annotation with Gemini** (done) | The key field in Settings (stored encrypted), `LyricsAnnotator` with Gemini, batching, JSON parsing, the cache; the translation of each line; the word sheet with lemma, morphology, meaning and cognates (marked AI-generated), and a link to Wiktionary for where the word comes from, never an AI answer |
 | **3b. Making it dependable** | "Translate again" for a song, the tapped word kept in view above the sheet, a model picker in Settings, the token cost of a song in the logs |
-| **4. Grounding** | Wiktionary for conjugation and forms (the etymology is already a link), cached by lemma. A Claude implementation of `LyricsAnnotator` is **dropped**: not needed |
+| **4. Grounding** (done) | Wiktionary for the dictionary form, the form and the meanings of a tapped word ([section 8b](#8b-what-the-ai-does-now-and-what-wiktionary-does-step-4)); the AI only translates and names the language of each line. A Claude implementation of `LyricsAnnotator` is **dropped**: not needed |
 | **5. Polish** | Saved vocabulary, timed highlighting while the song plays, more languages' special cases (languages written without spaces), the Spotify account source |
 
 ## 11. Risks and open questions

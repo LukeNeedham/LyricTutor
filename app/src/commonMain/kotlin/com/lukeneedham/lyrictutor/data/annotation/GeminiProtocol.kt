@@ -18,26 +18,19 @@ import kotlinx.serialization.json.putJsonObject
 /** The request and the response of Gemini's `generateContent`, as pure functions so that they are tested without a network. */
 object GeminiProtocol {
     private const val MAX_OUTPUT_TOKENS = 16_384
+    private const val CHOICE_MAX_OUTPUT_TOKENS = 512
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
 
     fun prompt(song: TrackInfo, lines: List<AnnotationLine>): String = buildString {
         appendLine("You are a language tutor. The user is learning from the lyrics of the song \"${song.title}\" by ${song.artists.joinToString(", ")}.")
-        appendLine("For each numbered lyric line below, give an English translation and an explanation of each word of the line.")
+        appendLine("The numbered lines below are the lyrics of the song in order: use the whole song as context. For each line, give its English translation and its language.")
         appendLine()
         appendLine("Rules:")
-        appendLine("- Detect the language of each word yourself. Songs mix languages, so never assume one language for the whole song.")
-        appendLine("- Give every word of the line, in order, as written in the line (\"surface\"), one entry per word. Leave out nothing but punctuation. Never repeat a word's entry.")
-        appendLine("- Always fill \"language\", \"lemma\", \"partOfSpeech\" and \"meaning\" of every word, also for little words like \"het\", \"en\" or \"me\".")
-        appendLine("- Every text is very short. Never list alternatives, never repeat yourself, never write more than the limit below.")
-        appendLine("- \"translation\": the natural English meaning of the whole line.")
-        appendLine("- \"language\": the English name of the language of this word, for example \"Spanish\" or \"Dutch\".")
-        appendLine("- \"lemma\": the dictionary form, one word. \"partOfSpeech\": one word, like noun, verb, adjective, article or pronoun.")
-        appendLine("- \"morphology\": at most 8 words saying how this one word is formed, for example \"present indicative, 1st person singular\" for a verb or \"feminine plural\" for a noun. Use null only for a word that is never inflected, like an adverb or a preposition.")
-        appendLine("- \"meaning\": at most 5 English words: what the word means in this line.")
-        appendLine("- \"note\": at most 15 words on slang, an idiom or an elision (for example \"pa'\" is \"para\"). Use null when there is nothing to say.")
-        appendLine("- \"cognates\": at most 3 English words with the same root, to help remember the word. Use an empty list when there are none, and give only cognates you are sure of.")
-        appendLine("- Answer for every line, with the same \"index\" as the line.")
+        appendLine("- \"translation\": the natural English meaning of the whole line. If the line is already English, repeat it.")
+        appendLine("- \"language\": the English name of the language of the line, for example \"Spanish\" or \"Dutch\". Songs mix languages, so decide for each line.")
+        appendLine("- \"otherLanguages\": the words of the line that are in another language than the line, each with its language, for example a word of English in a Spanish line. Use an empty list when the whole line is in one language.")
+        appendLine("- Answer for every line, with the same \"index\" as the line, and never explain anything else.")
         appendLine()
         appendLine("Lines:")
         lines.forEach { appendLine("${it.index}: ${it.text}") }
@@ -71,46 +64,78 @@ object GeminiProtocol {
         }
     }
 
-    private fun responseSchema(): JsonElement {
-        fun string(nullable: Boolean = false) = buildJsonObject {
-            put("type", "STRING")
-            if (nullable) put("nullable", true)
-        }
+    /** The question of which part of speech [word] is used as in [line]. */
+    fun choicePrompt(line: String, word: String, language: String?, options: List<String>): String = buildString {
+        appendLine("In this line of a song${language?.takeIf { it.isNotBlank() }?.let { " (in $it)" } ?: ""}, which part of speech is the word \"$word\" used as?")
+        appendLine("Line: $line")
+        appendLine("Options: ${options.joinToString(", ")}")
+        append("Answer with exactly one of the options.")
+    }
 
-        val word = buildJsonObject {
-            put("type", "OBJECT")
-            putJsonObject("properties") {
-                put("surface", string())
-                put("language", string())
-                put("lemma", string())
-                put("partOfSpeech", string())
-                put("morphology", string(nullable = true))
-                put("meaning", string())
-                put("note", string(nullable = true))
-                putJsonObject("cognates") {
-                    put("type", "ARRAY")
-                    put("items", string())
+    /** A request whose answer can only be one of [options]: Gemini's enum output, a string held to a fixed list. */
+    fun choiceRequestBody(line: String, word: String, language: String?, options: List<String>, model: String = ""): JsonObject = buildJsonObject {
+        putJsonArray("contents") {
+            addJsonObject {
+                putJsonArray("parts") { addJsonObject { put("text", choicePrompt(line, word, language, options)) } }
+            }
+        }
+        putJsonObject("generationConfig") {
+            put("responseMimeType", "text/x.enum")
+            putJsonObject("responseSchema") {
+                put("type", "STRING")
+                putJsonArray("enum") { options.forEach { add(JsonPrimitive(it)) } }
+            }
+            // A few tokens are enough for the answer; the room left is for the thinking that counts against the cap
+            put("maxOutputTokens", CHOICE_MAX_OUTPUT_TOKENS)
+            if (model.startsWith("gemini-3")) {
+                putJsonObject("thinkingConfig") { put("thinkingLevel", "low") }
+            }
+        }
+        putJsonArray("safetySettings") {
+            listOf("HARASSMENT", "HATE_SPEECH", "SEXUALLY_EXPLICIT", "DANGEROUS_CONTENT").forEach { category ->
+                addJsonObject {
+                    put("category", "HARM_CATEGORY_$category")
+                    put("threshold", "BLOCK_NONE")
                 }
             }
-            // Everything but the note is required: left optional, a smaller model leaves most of it out
-            put(
-                "required",
-                buildJsonArray {
-                    listOf("surface", "language", "lemma", "partOfSpeech", "morphology", "meaning", "cognates").forEach { add(JsonPrimitive(it)) }
-                },
-            )
+        }
+    }
+
+    /** The option an answer to [choiceRequestBody] names, or null when it names none (compared without case or quotes). */
+    fun parseChoice(body: String, options: List<String>): String? = try {
+        val text = json.decodeFromString(Response.serializer(), body).candidates.firstOrNull()
+            ?.content?.parts?.mapNotNull { it.text }?.joinToString("")?.trim()?.trim('"', '\'')?.trim()
+        options.firstOrNull { it.equals(text, ignoreCase = true) }
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
+    private fun responseSchema(): JsonElement {
+        fun string() = buildJsonObject { put("type", "STRING") }
+
+        val otherLanguage = buildJsonObject {
+            put("type", "OBJECT")
+            putJsonObject("properties") {
+                put("word", string())
+                put("language", string())
+            }
+            put("required", buildJsonArray { add(JsonPrimitive("word")); add(JsonPrimitive("language")) })
         }
         val line = buildJsonObject {
             put("type", "OBJECT")
             putJsonObject("properties") {
                 putJsonObject("index") { put("type", "INTEGER") }
                 put("translation", string())
-                putJsonObject("words") {
+                put("language", string())
+                putJsonObject("otherLanguages") {
                     put("type", "ARRAY")
-                    put("items", word)
+                    put("items", otherLanguage)
                 }
             }
-            put("required", buildJsonArray { add(JsonPrimitive("index")); add(JsonPrimitive("translation")); add(JsonPrimitive("words")) })
+            put(
+                "required",
+                buildJsonArray { listOf("index", "translation", "language", "otherLanguages").forEach { add(JsonPrimitive(it)) } },
+            )
         }
         return buildJsonObject {
             put("type", "OBJECT")

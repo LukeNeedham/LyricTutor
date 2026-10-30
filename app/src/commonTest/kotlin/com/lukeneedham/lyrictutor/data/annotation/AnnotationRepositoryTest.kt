@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 
 /** An annotation with everything the sheet of a word needs. */
-private fun complete(index: Int, translation: String) =
-    LineAnnotation(index, translation, listOf(WordAnnotation(surface = "w", lemma = "w", meaning = "m")))
+private fun complete(index: Int, translation: String) = LineAnnotation(index, translation, language = "Spanish")
 
 class AnnotationRepositoryTest {
 
@@ -60,12 +59,12 @@ class AnnotationRepositoryTest {
         val annotator = FakeAnnotator()
         val delivered = mutableListOf<LineAnnotation>()
 
-        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.BATCH_SIZE + 5)) { delivered += it }
+        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.MAX_LINES_PER_REQUEST + 5)) { delivered += it }
 
         assertTrue(result.isSuccess)
         assertEquals(2, annotator.batches.size)
-        assertEquals(AnnotationRepository.BATCH_SIZE + 5, delivered.size)
-        assertEquals(AnnotationRepository.BATCH_SIZE + 5, cache.annotations.size)
+        assertEquals(AnnotationRepository.MAX_LINES_PER_REQUEST + 5, delivered.size)
+        assertEquals(AnnotationRepository.MAX_LINES_PER_REQUEST + 5, cache.annotations.size)
     }
 
     @Test
@@ -129,7 +128,7 @@ class AnnotationRepositoryTest {
     fun stopsAfterTheRetryFailsToo() = runTest {
         val annotator = FakeAnnotator(mutableListOf(AnnotationException.Failed("a"), AnnotationException.Failed("b")))
         val cache = FakeCache()
-        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.BATCH_SIZE + 5)) {}
+        val result = AnnotationRepository(cache, annotator).annotate(track, lines(AnnotationRepository.MAX_LINES_PER_REQUEST + 5)) {}
 
         assertIs<AnnotationException.Failed>(result.exceptionOrNull())
         assertEquals(2, annotator.batches.size)
@@ -165,14 +164,14 @@ class AnnotationRepositoryTest {
     }
 
     @Test
-    fun asksAgainWhenAWordHasNoMeaningAndShowsTheBestWithoutKeepingIt() = runTest {
+    fun asksAgainWhenTheLanguageIsMissingAndShowsTheBestWithoutKeepingIt() = runTest {
         val answers = mutableListOf<List<Int>>()
-        // Always answers the line, but with a word that has a lemma and no meaning
+        // Always answers the line, but without its language
         val annotator = object : LyricsAnnotator {
             override val providerName = "fake"
             override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
                 answers += lines.map { it.index }
-                return Result.success(lines.map { LineAnnotation(it.index, "t", listOf(WordAnnotation(surface = "w", lemma = "w"))) })
+                return Result.success(lines.map { LineAnnotation(it.index, "t") })
             }
         }
         val cache = FakeCache()
@@ -187,7 +186,7 @@ class AnnotationRepositoryTest {
 
     @Test
     fun asksAgainForKeptAnnotationsThatAreNotComplete() = runTest {
-        val cache = FakeCache(mutableMapOf(0 to LineAnnotation(0, "kept", listOf(WordAnnotation(surface = "w")))))
+        val cache = FakeCache(mutableMapOf(0 to LineAnnotation(0, "kept")))
         val annotator = FakeAnnotator()
         AnnotationRepository(cache, annotator).annotate(track, lines(1)) {}
 

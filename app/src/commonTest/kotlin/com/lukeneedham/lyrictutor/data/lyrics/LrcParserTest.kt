@@ -8,8 +8,8 @@ class LrcParserTest {
 
     @Test
     fun parsesTimedLines() {
-        val lines = LrcParser.parseTimed("[00:17.12] Si me voy\n[01:02.5] y si me quedo\n[10:00.000] fin")
-        assertEquals(listOf("Si me voy", "y si me quedo", "fin"), lines.map { it.text })
+        val lines = LrcParser.parseTimed("[00:17.12] primera linea\n[01:02.5] segunda linea\n[10:00.000] fin")
+        assertEquals(listOf("primera linea", "segunda linea", "fin"), lines.map { it.text })
         assertEquals(listOf(17_120L, 62_500L, 600_000L), lines.map { it.startMs })
     }
 

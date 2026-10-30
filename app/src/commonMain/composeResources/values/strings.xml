@@ -27,7 +27,7 @@
     <string name="settings_api_key_note">Your own key from Google AI Studio. It is stored encrypted on this device and sent only to Google.</string>
     <string name="settings_save">Save</string>
     <string name="settings_saved">Saved</string>
-    <string name="settings_attribution">Lyrics come from LRCLIB. Translations and word explanations are written by an AI and can be wrong.</string>
+    <string name="settings_attribution">Lyrics come from LRCLIB. Word information is from Wiktionary (CC BY-SA). Translations are written by an AI and can be wrong.</string>
     <string name="annotation_progress">Translating… %1$d of %2$d lines</string>
     <string name="annotation_missing_key">Add your Gemini API key in Settings to see translations and word meanings.</string>
     <string name="annotation_invalid_key">Gemini refused your API key. Check it in Settings.</string>
@@ -36,19 +36,10 @@
     <string name="annotation_failed">Could not get the translations.</string>
     <string name="annotation_open_settings">Open Settings</string>
     <string name="annotation_retry">Try again</string>
-    <string name="word_ai_note">Written by an AI: it can be wrong.</string>
     <string name="word_language">Language</string>
-    <string name="word_lemma">Dictionary form</string>
-    <string name="word_morphology">Form</string>
-    <string name="word_meaning">Meaning here</string>
-    <string name="word_note">Note</string>
-    <string name="word_wiktionary_title">Where it comes from</string>
-    <string name="word_wiktionary_open">%1$s on Wiktionary</string>
-    <string name="word_wiktionary_not_found">No Wiktionary page found. Search Wiktionary</string>
+    <string name="word_wiktionary_not_found">No Wiktionary page found for this word.</string>
     <string name="word_wiktionary_loading">Looking it up on Wiktionary…</string>
     <string name="word_wiktionary_error">Could not reach Wiktionary.</string>
-    <string name="word_cognates">English words with the same root</string>
-    <string name="word_close">Close</string>
     <string name="settings_models_show">Show the models of this key</string>
     <string name="settings_models_loading">Getting the models…</string>
     <string name="settings_models_none">No usable models found for this key.</string>
@@ -57,4 +48,7 @@
     <string name="settings_models_failed">Could not get the models. Check your connection.</string>
     <string name="song_play_on_spotify">Play on Spotify</string>
     <string name="song_translate_again">Translate again</string>
+    <string name="word_meanings_of">Meanings of %1$s</string>
+    <string name="word_no_senses">Wiktionary has a page for this word, but no meanings.</string>
+    <string name="word_source_note">From Wiktionary, under the CC BY-SA license. Open the page.</string>
 </resources>
