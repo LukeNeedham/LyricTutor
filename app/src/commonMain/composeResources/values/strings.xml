@@ -60,7 +60,7 @@
     <string name="word_wiktionary_error">Could not reach Wiktionary.</string>
     <string name="word_meanings_of">Meanings of %1$s</string>
     <string name="word_no_senses">Wiktionary has a page for this word, but no meanings.</string>
-    <string name="word_source_note">From Wiktionary, under the CC BY-SA license. Open the page.</string>
+    <string name="word_open_wiktionary">Open on Wiktionary</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -73,8 +73,8 @@
     <string name="settings_key_hide">Hide the key</string>
     <string name="settings_save">Save</string>
     <string name="settings_saved">Saved</string>
-    <string name="settings_about_title">About the data</string>
-    <string name="settings_attribution">Lyrics come from LRCLIB. Word information is from Wiktionary (CC BY-SA). Translations are written by an AI and can be wrong.</string>
+    <string name="settings_about_title">Credits</string>
+    <string name="settings_attribution">Lyrics come from LRCLIB. Word meanings and forms come from Wiktionary, under the CC BY-SA license. Translations are written by an AI and can be wrong.</string>
     <string name="settings_models_show">Show the models of this key</string>
     <string name="settings_models_loading">Getting the models…</string>
     <string name="settings_models_none">No usable models found for this key.</string>

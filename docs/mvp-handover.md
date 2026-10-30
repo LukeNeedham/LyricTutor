@@ -123,7 +123,13 @@ still looks right) and `Spinner`. `AppThemeValues` gained `surfaceVariant`, `onS
 `border` and the two `gradient*` colours; `outline` stays because the library's `DebugTheme` is mapped from it. Home has a gradient hero
 with the link field and, until a first song is opened, a "How it works" card. The song page has a header (cover, title, actions), stacked
 lyric lines with a pulsing placeholder for translations still on their way, and a status card with a progress bar. Settings is two cards.
-**Not verified**: none of this has been built or run yet; the first CI build is the first compile.
+The app is edge to edge (`enableEdgeToEdge()`): every page is a `Column` of the common `AppToolbar` (64dp under the status bar; back first, then
+the title, then the actions, so nothing moves between pages) and a list that scrolls under the navigation bar (`navigationBarHeight()`).
+Pages slide (new page in from the right, old out to the left; reversed on back) through `transitionSpec` and `popTransitionSpec` of the `NavDisplay`.
+The song page is painted with its cover: `ArtColorExtractor` (Coil in `androidMain`) hands the pixels to `DominantColors` (pure Kotlin, tested),
+which gives the most prominent colour as primary and the most prominent colour at least 100 apart (RGB) as secondary; `withArtColors` makes
+them readable against the page. The word sheet has no close button: its handle closes it, and its header has the Wiktionary link as an icon.
+**Not verified on a device**: the colours of real covers, and the slide and edge-to-edge behaviour; CI builds and renders previews.
 
 ## 5. How to build on the skeleton
 

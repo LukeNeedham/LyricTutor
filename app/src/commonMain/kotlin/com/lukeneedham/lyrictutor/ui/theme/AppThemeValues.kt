@@ -22,6 +22,11 @@ data class AppThemeValues(
     /** A soft tint of [primary]: the selected word, the form of a word. */
     val primaryContainer: Color,
     val onPrimaryContainer: Color,
+    /** The second colour of a song's page (from its album art); the app's own accent elsewhere. */
+    val secondary: Color,
+    /** A soft tint of [secondary]: the selected word. */
+    val secondaryContainer: Color,
+    val onSecondaryContainer: Color,
     /** Hairlines and the borders of fields. */
     val border: Color,
     val outline: Color,
@@ -44,6 +49,9 @@ internal val LightAppThemeValues = AppThemeValues(
     onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFFE4E0FF),
     onPrimaryContainer = Color(0xFF2A1F9E),
+    secondary = Color(0xFFC13FA6),
+    secondaryContainer = Color(0xFFF8DCF0),
+    onSecondaryContainer = Color(0xFF5A1E4C),
     border = Color(0xFFDDDAE8),
     outline = Color(0xFF8A8A94),
     error = Color(0xFFB3261E),
@@ -64,6 +72,9 @@ internal val DarkAppThemeValues = AppThemeValues(
     onPrimary = Color(0xFF2A1F9E),
     primaryContainer = Color(0xFF3A2FA8),
     onPrimaryContainer = Color(0xFFE4E0FF),
+    secondary = Color(0xFFE08BD0),
+    secondaryContainer = Color(0xFF5A2350),
+    onSecondaryContainer = Color(0xFFFBD9F2),
     border = Color(0xFF34313F),
     outline = Color(0xFF8E8E98),
     error = Color(0xFFF2B8B5),

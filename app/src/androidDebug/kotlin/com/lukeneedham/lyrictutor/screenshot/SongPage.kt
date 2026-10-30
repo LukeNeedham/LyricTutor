@@ -1,7 +1,9 @@
 package com.lukeneedham.lyrictutor.screenshot
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import com.lukeneedham.lyrictutor.data.art.ArtColors
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
@@ -51,6 +53,7 @@ private fun SongPageScreenshot() {
     )
     val state = SongUiState.Loaded(
         track = track,
+        artColors = ArtColors(primary = Color(0xFF1F8A8A), secondary = Color(0xFFE8833A)),
         lyrics = LyricsUiState.Found(lyrics),
         annotations = annotations,
         selectedWord = SelectedWord(surface = "dos", language = "Spanish", lineIndex = 0, tokenIndex = 1),

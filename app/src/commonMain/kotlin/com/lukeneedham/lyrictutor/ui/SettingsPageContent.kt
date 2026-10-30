@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukeneedham.common.ui.DebugButton
 import com.lukeneedham.lyrictutor.generated.resources.Res
-import com.lukeneedham.lyrictutor.generated.resources.action_back
 import com.lukeneedham.lyrictutor.generated.resources.settings_about_title
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_intro
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_title
@@ -55,6 +54,9 @@ import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppIconButton
+import com.lukeneedham.lyrictutor.ui.components.AppToolbar
+import com.lukeneedham.lyrictutor.ui.components.navigationBarHeight
+import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
 import com.lukeneedham.lyrictutor.ui.components.AppIconImage
 import com.lukeneedham.lyrictutor.ui.components.AppText
 import com.lukeneedham.lyrictutor.ui.components.AppTextField
@@ -78,24 +80,16 @@ internal fun SettingsPageContent(
     val theme = AppTheme.current
     // Only how the key is drawn: nothing the ViewModel needs to know
     var isKeyShown by remember { mutableStateOf(false) }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(theme.background)
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(start = 8.dp, end = 8.dp, bottom = 32.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 64.dp)) {
-            AppIconButton(icon = AppIcon.Back, contentDescription = stringResource(Res.string.action_back), onClick = onBack)
-            AppText(
-                text = stringResource(Res.string.settings_title),
-                size = 24.sp,
-                weight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
-        Column(modifier = Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(theme.background).sideInsetsPadding().imePadding()) {
+        AppToolbar(title = stringResource(Res.string.settings_title), onBack = onBack)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 32.dp + navigationBarHeight()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             Card(title = stringResource(Res.string.settings_ai_title)) {
                 AppText(text = stringResource(Res.string.settings_ai_intro), color = theme.onSurfaceVariant, size = 14.sp)
                 Field(label = stringResource(Res.string.settings_api_key_label)) {

@@ -1,7 +1,6 @@
 package com.lukeneedham.lyrictutor.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -19,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,12 +25,12 @@ import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.word_meanings_of
 import com.lukeneedham.lyrictutor.generated.resources.word_no_senses
-import com.lukeneedham.lyrictutor.generated.resources.word_source_note
+import com.lukeneedham.lyrictutor.generated.resources.word_open_wiktionary
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_error
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_loading
 import com.lukeneedham.lyrictutor.generated.resources.word_wiktionary_not_found
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
-import com.lukeneedham.lyrictutor.ui.components.AppIconImage
+import com.lukeneedham.lyrictutor.ui.components.AppIconButton
 import com.lukeneedham.lyrictutor.ui.components.AppText
 import com.lukeneedham.lyrictutor.ui.components.Spinner
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
@@ -55,15 +52,32 @@ internal fun WordSheetContent(
 ) {
     val theme = AppTheme.current
     val shownLanguage = (wiktionary as? WiktionaryUiState.Found)?.result?.language ?: language
+    // The page of the word on Wiktionary (a search for it when there is no page); none while it is still being looked up
+    val wiktionaryUrl = when (wiktionary) {
+        is WiktionaryUiState.Found -> wiktionary.result.url
+        is WiktionaryUiState.NotFound -> wiktionary.searchUrl
+        else -> null
+    }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Column(modifier = Modifier.padding(end = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppText(text = word, size = 34.sp, lineHeight = 40.sp, weight = FontWeight.Bold)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (shownLanguage != null) Chip(text = shownLanguage, container = theme.primaryContainer, content = theme.onPrimaryContainer)
-                val result = (wiktionary as? WiktionaryUiState.Found)?.result
-                for (partOfSpeech in result?.senses.orEmpty().map { it.partOfSpeech.lowercase() }.distinct()) {
-                    Chip(text = partOfSpeech, container = theme.surfaceVariant, content = theme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppText(text = word, size = 34.sp, lineHeight = 40.sp, weight = FontWeight.Bold)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (shownLanguage != null) Chip(text = shownLanguage, container = theme.primaryContainer, content = theme.onPrimaryContainer)
+                    val result = (wiktionary as? WiktionaryUiState.Found)?.result
+                    for (partOfSpeech in result?.senses.orEmpty().map { it.partOfSpeech.lowercase() }.distinct()) {
+                        Chip(text = partOfSpeech, container = theme.surfaceVariant, content = theme.onSurfaceVariant)
+                    }
                 }
+            }
+            if (wiktionaryUrl != null) {
+                AppIconButton(
+                    icon = AppIcon.External,
+                    contentDescription = stringResource(Res.string.word_open_wiktionary),
+                    onClick = { onOpenUrl(wiktionaryUrl) },
+                    tint = theme.primary,
+                    background = theme.primaryContainer,
+                )
             }
         }
         when (wiktionary) {
@@ -83,13 +97,6 @@ internal fun WordSheetContent(
 
             is WiktionaryUiState.Found -> Found(wiktionary.result)
         }
-        // The credit is the link to the page of the word on Wiktionary (a search for it when there is no page)
-        val creditUrl = when (wiktionary) {
-            is WiktionaryUiState.Found -> wiktionary.result.url
-            is WiktionaryUiState.NotFound -> wiktionary.searchUrl
-            else -> null
-        }
-        Credit(url = creditUrl, onOpenUrl = onOpenUrl)
     }
 }
 
@@ -167,29 +174,6 @@ private fun Sense(sense: WiktionarySense) {
                 AppText(text = gloss, color = theme.onSurface, size = 16.sp, modifier = Modifier.weight(1f))
             }
         }
-    }
-}
-
-/** The licence note, which is also the link to the page when there is one. */
-@Composable
-private fun Credit(url: String?, onOpenUrl: (String) -> Unit) {
-    val theme = AppTheme.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .then(if (url != null) Modifier.clickable(role = Role.Button) { onOpenUrl(url) } else Modifier),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        AppText(
-            text = stringResource(Res.string.word_source_note),
-            color = if (url != null) theme.primary else theme.onSurfaceVariant,
-            size = 14.sp,
-            modifier = Modifier.weight(1f),
-        )
-        if (url != null) AppIconImage(icon = AppIcon.Arrow, tint = theme.primary, iconSize = 18.dp)
     }
 }
 

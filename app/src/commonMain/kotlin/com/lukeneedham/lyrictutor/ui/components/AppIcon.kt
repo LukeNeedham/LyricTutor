@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 
 /** The few icons the app needs, drawn by hand on a 24 by 24 grid: the app has no icon library. */
-internal enum class AppIcon { Back, Chevron, Sliders, Arrow, Play, Close, Eye, EyeOff, Check, Refresh, Note }
+internal enum class AppIcon { Back, Chevron, Sliders, Arrow, Play, Close, Eye, EyeOff, Check, Refresh, Note, External }
 
 @Composable
 internal fun AppIconImage(
@@ -85,6 +85,11 @@ internal fun AppIconImage(
                     style = stroke,
                 )
                 polyline(19f to 3f, 19f to 8f, 14f to 8f)
+            }
+            AppIcon.External -> {
+                polyline(10f to 5f, 5f to 5f, 5f to 19f, 19f to 19f, 19f to 14f)
+                polyline(13f to 4f, 20f to 4f, 20f to 11f)
+                polyline(20f to 4f, 11f to 13f)
             }
             AppIcon.Note -> {
                 polyline(14f to 4f, 14f to 16.5f)

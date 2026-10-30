@@ -3,6 +3,7 @@ package com.lukeneedham.lyrictutor.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
+import com.lukeneedham.lyrictutor.data.art.ArtColorExtractor
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
 import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
@@ -29,6 +30,7 @@ class SongViewModel(
     private val annotationRepository: AnnotationRepository,
     private val wiktionaryLookup: WiktionaryLookup,
     private val partOfSpeechChooser: PartOfSpeechChooser,
+    private val artColorExtractor: ArtColorExtractor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
@@ -141,6 +143,16 @@ class SongViewModel(
             songCache.saveTrack(track)
             _uiState.value = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Loading)
             loadLyrics(track)
+            loadArtColors(track)
+        }
+    }
+
+    /** The page is painted with the colours of the cover once they are read; until then, and without a cover, it keeps the app's own. */
+    private fun loadArtColors(track: TrackInfo) {
+        val coverUrl = track.coverUrl ?: return
+        viewModelScope.launch {
+            val colors = artColorExtractor.extract(coverUrl) ?: return@launch
+            updateLoaded { it.copy(artColors = colors) }
         }
     }
 

@@ -58,7 +58,7 @@ internal fun LyricLineRow(
                 val isSelected = tokenIndex == selectedToken
                 // The word whose sheet is open is marked, so it is clear which word the sheet is about
                 val highlight by animateColorAsState(
-                    targetValue = if (isSelected) theme.primaryContainer else Color.Transparent,
+                    targetValue = if (isSelected) theme.secondaryContainer else Color.Transparent,
                     label = "wordHighlight",
                 )
                 Box(
@@ -71,7 +71,7 @@ internal fun LyricLineRow(
                 ) {
                     AppText(
                         text = token,
-                        color = if (isSelected) theme.onPrimaryContainer else theme.onBackground,
+                        color = if (isSelected) theme.onSecondaryContainer else theme.onBackground,
                         size = 22.sp,
                         lineHeight = 28.sp,
                         weight = FontWeight.SemiBold,

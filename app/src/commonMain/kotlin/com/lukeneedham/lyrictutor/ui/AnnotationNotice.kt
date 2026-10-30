@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,7 +82,12 @@ internal fun AnnotationNotice(
                 label = "progress",
             )
             Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(theme.surfaceVariant)) {
-                Box(modifier = Modifier.fillMaxWidth(fraction).fillMaxHeight().background(theme.primary))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .fillMaxHeight()
+                        .background(Brush.horizontalGradient(listOf(theme.primary, theme.secondary))),
+                )
             }
         }
         if (detail != null) AppText(text = detail, color = theme.onSurfaceVariant, size = 13.sp)

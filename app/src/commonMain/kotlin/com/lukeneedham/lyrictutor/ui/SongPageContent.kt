@@ -11,12 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,8 +44,6 @@ import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryResult
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
 import com.lukeneedham.lyrictutor.generated.resources.Res
-import com.lukeneedham.lyrictutor.generated.resources.action_back
-import com.lukeneedham.lyrictutor.generated.resources.action_open_settings
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_loading
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_pasted_note
 import com.lukeneedham.lyrictutor.generated.resources.song_error_network
@@ -55,11 +54,16 @@ import com.lukeneedham.lyrictutor.generated.resources.song_loading
 import com.lukeneedham.lyrictutor.generated.resources.song_retry
 import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
-import com.lukeneedham.lyrictutor.ui.components.AppIconButton
+import com.lukeneedham.lyrictutor.ui.components.AppToolbar
+import com.lukeneedham.lyrictutor.ui.components.SettingsAction
+import com.lukeneedham.lyrictutor.ui.components.navigationBarHeight
+import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
 import com.lukeneedham.lyrictutor.ui.components.AppText
 import com.lukeneedham.lyrictutor.ui.components.Spinner
 import com.lukeneedham.lyrictutor.ui.components.trackColor
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
+import com.lukeneedham.lyrictutor.ui.theme.LocalAppTheme
+import com.lukeneedham.lyrictutor.ui.theme.withArtColors
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -80,7 +84,10 @@ internal fun SongPageContent(
     onWordClick: (SelectedWord) -> Unit,
     onWordDismiss: () -> Unit,
 ) {
-    val theme = AppTheme.current
+    // The page is painted with the colours of the song's cover, once they are read
+    val appTheme = AppTheme.current
+    val artColors = (state as? SongUiState.Loaded)?.artColors
+    val theme = remember(appTheme, artColors) { if (artColors == null) appTheme else appTheme.withArtColors(artColors) }
     val uriHandler = LocalUriHandler.current
     var sheetHeightPx by remember { mutableIntStateOf(0) }
     // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
@@ -91,31 +98,30 @@ internal fun SongPageContent(
             Logger.e("Could not open the song in Spotify", e)
         }
     }
+    CompositionLocalProvider(LocalAppTheme provides theme) {
     Box(modifier = Modifier.fillMaxSize().background(theme.background)) {
-        // A glow of the song's own colour at the top, behind the cover
+        // A glow of the song's own colours at the top, behind the toolbar and the cover: it reaches under the status bar
         if (state is SongUiState.Loaded) {
+            val glowStart = artColors?.primary ?: trackColor(state.track.trackId)
+            val glowEnd = artColors?.secondary ?: trackColor(state.track.trackId.reversed(), value = 0.6f)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(380.dp)
-                    .background(Brush.verticalGradient(listOf(trackColor(state.track.trackId).copy(alpha = 0.32f), Color.Transparent))),
+                    .height(420.dp)
+                    .background(Brush.verticalGradient(listOf(glowStart.copy(alpha = 0.38f), glowEnd.copy(alpha = 0.12f), Color.Transparent))),
             )
         }
-        Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+        Column(modifier = Modifier.fillMaxSize().sideInsetsPadding().imePadding()) {
+            AppToolbar(onBack = onBack, actions = { SettingsAction(onClick = onOpenSettings) })
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when (state) {
-                SongUiState.Loading -> {
-                    CenteredMessage(text = stringResource(Res.string.song_loading), showSpinner = true)
-                    TopBar(onBack = onBack, onOpenSettings = onOpenSettings)
-                }
+                SongUiState.Loading -> CenteredMessage(text = stringResource(Res.string.song_loading), showSpinner = true)
 
-                is SongUiState.Error -> {
-                    CenteredMessage(
-                        text = stringResource(if (state.isNetwork) Res.string.song_error_network else Res.string.song_error_unreadable),
-                        isError = true,
-                        action = { AppButton(text = stringResource(Res.string.song_retry), onClick = onRetry, icon = AppIcon.Refresh) },
-                    )
-                    TopBar(onBack = onBack, onOpenSettings = onOpenSettings)
-                }
+                is SongUiState.Error -> CenteredMessage(
+                    text = stringResource(if (state.isNetwork) Res.string.song_error_network else Res.string.song_error_unreadable),
+                    isError = true,
+                    action = { AppButton(text = stringResource(Res.string.song_retry), onClick = onRetry, icon = AppIcon.Refresh) },
+                )
 
                 is SongUiState.Loaded -> {
                     val listState = rememberLazyListState()
@@ -142,19 +148,16 @@ internal fun SongPageContent(
                         contentPadding = PaddingValues(
                             start = 20.dp,
                             end = 20.dp,
-                            bottom = 32.dp + with(LocalDensity.current) { sheetHeight.toDp() },
+                            bottom = 32.dp + navigationBarHeight() + with(LocalDensity.current) { sheetHeight.toDp() },
                         ),
                     ) {
                         item {
-                            Column {
-                                TopBar(onBack = onBack, onOpenSettings = onOpenSettings)
-                                SongHeader(
-                                    track = state.track,
-                                    canTranslateAgain = state.annotationStatus == AnnotationStatus.Idle && state.annotations.isNotEmpty(),
-                                    onPlay = { playOnSpotify(state.track.trackId) },
-                                    onTranslateAgain = onTranslateAgain,
-                                )
-                            }
+                            SongHeader(
+                                track = state.track,
+                                canTranslateAgain = state.annotationStatus == AnnotationStatus.Idle && state.annotations.isNotEmpty(),
+                                onPlay = { playOnSpotify(state.track.trackId) },
+                                onTranslateAgain = onTranslateAgain,
+                            )
                         }
                         if (hasNotice) {
                             item {
@@ -215,6 +218,7 @@ internal fun SongPageContent(
                     }
                 }
             }
+            }
         }
         if (state is SongUiState.Loaded) {
             WordSheet(
@@ -226,14 +230,6 @@ internal fun SongPageContent(
             )
         }
     }
-}
-
-@Composable
-private fun TopBar(onBack: () -> Unit, onOpenSettings: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
-        AppIconButton(icon = AppIcon.Back, contentDescription = stringResource(Res.string.action_back), onClick = onBack)
-        Box(modifier = Modifier.weight(1f))
-        AppIconButton(icon = AppIcon.Sliders, contentDescription = stringResource(Res.string.action_open_settings), onClick = onOpenSettings)
     }
 }
 

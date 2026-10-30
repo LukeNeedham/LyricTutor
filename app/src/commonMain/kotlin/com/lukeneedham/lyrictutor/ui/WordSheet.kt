@@ -30,11 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.action_close
-import com.lukeneedham.lyrictutor.ui.components.AppIcon
-import com.lukeneedham.lyrictutor.ui.components.AppIconButton
 import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
@@ -48,6 +49,7 @@ internal fun WordSheet(
     onDismiss: () -> Unit,
 ) {
     val theme = AppTheme.current
+    val closeDescription = stringResource(Res.string.action_close)
     // The last word stays on screen while the sheet slides away
     var shown by remember { mutableStateOf(selected) }
     if (selected != null) shown = selected
@@ -80,32 +82,28 @@ internal fun WordSheet(
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
+                        // The handle closes the sheet: its touch area is wider and taller than what is drawn
                         Box(
                             modifier = Modifier
-                                .padding(top = 10.dp)
                                 .align(Alignment.CenterHorizontally)
-                                .width(40.dp)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(theme.border),
-                        )
+                                .width(120.dp)
+                                .height(48.dp)
+                                .semantics { contentDescription = closeDescription }
+                                .clickable(role = Role.Button, onClick = onDismiss),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(modifier = Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(theme.border))
+                        }
                         Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                             WordSheetContent(
                                 word = word.surface,
                                 language = word.language,
                                 wiktionary = wiktionary,
                                 onOpenUrl = onOpenUrl,
-                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp).navigationBarsPadding(),
+                                modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 0.dp, bottom = 24.dp).navigationBarsPadding(),
                             )
                         }
                     }
-                    AppIconButton(
-                        icon = AppIcon.Close,
-                        contentDescription = stringResource(Res.string.action_close),
-                        onClick = onDismiss,
-                        tint = theme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 12.dp),
-                    )
                 }
             }
         }

@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
-import com.lukeneedham.lyrictutor.generated.resources.action_open_settings
 import com.lukeneedham.lyrictutor.generated.resources.home_hero_subtitle
 import com.lukeneedham.lyrictutor.generated.resources.home_hero_title
 import com.lukeneedham.lyrictutor.generated.resources.home_how_1_body
@@ -53,6 +52,10 @@ import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppIconButton
 import com.lukeneedham.lyrictutor.ui.components.AppIconImage
+import com.lukeneedham.lyrictutor.ui.components.AppToolbar
+import com.lukeneedham.lyrictutor.ui.components.SettingsAction
+import com.lukeneedham.lyrictutor.ui.components.navigationBarHeight
+import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
 import com.lukeneedham.lyrictutor.ui.components.AppText
 import com.lukeneedham.lyrictutor.ui.components.AppTextField
 import com.lukeneedham.lyrictutor.ui.components.CoverArt
@@ -70,12 +73,12 @@ internal fun HomePageContent(
     onOpenSong: (trackId: String) -> Unit,
 ) {
     val theme = AppTheme.current
-    Box(modifier = Modifier.fillMaxSize().background(theme.background)) {
+    Column(modifier = Modifier.fillMaxSize().background(theme.background).sideInsetsPadding()) {
+        AppToolbar(title = stringResource(Res.string.home_title), actions = { SettingsAction(onClick = onOpenSettings) })
         LazyColumn(
-            modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 32.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 32.dp + navigationBarHeight()),
         ) {
-            item { TopRow(onOpenSettings = onOpenSettings) }
             item {
                 Hero(
                     input = state.input,
@@ -100,36 +103,6 @@ internal fun HomePageContent(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun TopRow(onOpenSettings: () -> Unit) {
-    val theme = AppTheme.current
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(11.dp))
-                .background(Brush.linearGradient(listOf(theme.gradientStart, theme.gradientEnd))),
-            contentAlignment = Alignment.Center,
-        ) {
-            AppIconImage(icon = AppIcon.Note, tint = Color.White, iconSize = 22.dp)
-        }
-        AppText(
-            text = stringResource(Res.string.home_title),
-            size = 22.sp,
-            weight = FontWeight.Bold,
-            modifier = Modifier.weight(1f).padding(start = 12.dp),
-        )
-        AppIconButton(
-            icon = AppIcon.Sliders,
-            contentDescription = stringResource(Res.string.action_open_settings),
-            onClick = onOpenSettings,
-        )
     }
 }
 

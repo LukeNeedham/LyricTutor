@@ -1,5 +1,9 @@
 package com.lukeneedham.lyrictutor.ui
 
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
@@ -31,6 +35,8 @@ private val backStackConfig = SavedStateConfiguration {
     }
 }
 
+private const val SLIDE_MILLIS = 320
+
 /** Owns the back stack and the [NavDisplay]. Called only by [Root]. [sharedText] is what another app shared to this one. */
 @Composable
 fun AppNavigation(sharedText: String? = null) {
@@ -49,6 +55,15 @@ fun AppNavigation(sharedText: String? = null) {
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
+        // Going forward the new page slides in from the right and the old one out to the left; going back, the other way round
+        transitionSpec = {
+            slideInHorizontally(animationSpec = tween(SLIDE_MILLIS)) { it } togetherWith
+                slideOutHorizontally(animationSpec = tween(SLIDE_MILLIS)) { -it }
+        },
+        popTransitionSpec = {
+            slideInHorizontally(animationSpec = tween(SLIDE_MILLIS)) { -it } togetherWith
+                slideOutHorizontally(animationSpec = tween(SLIDE_MILLIS)) { it }
+        },
         entryProvider = { key -> routeEntryProvider(backStack, key) },
     )
 }

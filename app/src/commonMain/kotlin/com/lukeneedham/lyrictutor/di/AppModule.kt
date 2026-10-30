@@ -54,6 +54,7 @@ val appModule = module {
             annotationRepository = get(),
             wiktionaryLookup = get(),
             partOfSpeechChooser = get(),
+            artColorExtractor = get(),
         ) }
     viewModel { SettingsViewModel(isDebugEnabled = DebugKit.enabled, settingsStore = get(), modelCatalog = get()) }
 }
