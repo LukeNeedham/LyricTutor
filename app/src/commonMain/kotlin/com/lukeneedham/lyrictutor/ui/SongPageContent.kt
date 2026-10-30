@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -89,7 +90,8 @@ internal fun SongPageContent(
     val artColors = (state as? SongUiState.Loaded)?.artColors
     val theme = remember(appTheme, artColors) { if (artColors == null) appTheme else appTheme.withArtColors(artColors) }
     val uriHandler = LocalUriHandler.current
-    var sheetHeightPx by remember { mutableIntStateOf(0) }
+    // The sheet opens over the lower half of the page; the page height is what that is measured against
+    var pageHeightPx by remember { mutableIntStateOf(0) }
     // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
     fun playOnSpotify(trackId: String) {
         try {
@@ -99,7 +101,7 @@ internal fun SongPageContent(
         }
     }
     CompositionLocalProvider(LocalAppTheme provides theme) {
-    Box(modifier = Modifier.fillMaxSize().background(theme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(theme.background).onSizeChanged { pageHeightPx = it.height }) {
         // A glow of the song's own colours at the top, behind the toolbar and the cover: it reaches under the status bar
         if (state is SongUiState.Loaded) {
             val glowStart = artColors?.primary ?: trackColor(state.track.trackId)
@@ -128,7 +130,7 @@ internal fun SongPageContent(
                     val lyricsFound = state.lyrics as? LyricsUiState.Found
                     val hasNotice = lyricsFound != null && state.annotationStatus != AnnotationStatus.Idle
                     // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
-                    val sheetHeight = if (state.selectedWord != null) sheetHeightPx else 0
+                    val sheetHeight = if (state.selectedWord != null) pageHeightPx / 2 else 0
                     // The items before the first line: the header, the notice (when there is one) and the title of the lyrics
                     val firstLineItem = 2 + if (hasNotice) 1 else 0
                     LaunchedEffect(state.selectedWord, sheetHeight) {
@@ -225,7 +227,6 @@ internal fun SongPageContent(
                 selected = state.selectedWord,
                 wiktionary = state.wiktionary,
                 onOpenUrl = uriHandler::openUri,
-                onHeightChange = { sheetHeightPx = it },
                 onDismiss = onWordDismiss,
             )
         }
