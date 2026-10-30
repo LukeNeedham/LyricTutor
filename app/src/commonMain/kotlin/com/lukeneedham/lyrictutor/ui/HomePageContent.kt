@@ -183,7 +183,6 @@ private fun RecentSongRow(track: TrackInfo, onClick: () -> Unit) {
             coverUrl = track.coverUrl,
             contentDescription = stringResource(Res.string.song_cover_description),
             size = 60.dp,
-            cornerRadius = 12.dp,
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             AppText(

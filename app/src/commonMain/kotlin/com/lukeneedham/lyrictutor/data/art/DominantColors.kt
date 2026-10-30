@@ -16,6 +16,9 @@ object DominantColors {
     /** The secondary colour is at least this far from the primary one. */
     private const val DIFFERENT_COLOR_DISTANCE = 100.0
 
+    /** A colour must cover at least this share of the colourful pixels to be the secondary one (so a few stray pixels do not count). */
+    private const val MIN_SECONDARY_SHARE = 0.005
+
     /** A colour needs at least this much saturation, and this much brightness, to count as a colour and not as a grey, black or white. */
     private const val MIN_SATURATION = 0.25
     private const val MIN_BRIGHTNESS = 0.25
@@ -34,8 +37,11 @@ object DominantColors {
         val primaryBin = bins.first()
         val primary = merged(around = primaryBin, bins = bins)
 
-        // The most prominent bin that is far from the primary colour is the centre of the secondary one
-        val secondaryBin = bins.firstOrNull { it.color.distanceTo(primary) >= DIFFERENT_COLOR_DISTANCE }
+        // The secondary colour is the one furthest from the primary colour, even if it is rare: a bit of orange beats a lot of light blue
+        val minCount = bins.sumOf { it.count } * MIN_SECONDARY_SHARE
+        val secondaryBin = bins
+            .filter { it.count >= minCount && it.color.distanceTo(primary) >= DIFFERENT_COLOR_DISTANCE }
+            .maxByOrNull { it.color.distanceTo(primary) }
         val secondary = if (secondaryBin != null) {
             merged(around = secondaryBin, bins = bins.filter { it.color.distanceTo(primary) >= DIFFERENT_COLOR_DISTANCE })
         } else {

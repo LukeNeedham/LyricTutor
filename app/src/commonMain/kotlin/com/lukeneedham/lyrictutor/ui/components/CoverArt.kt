@@ -24,6 +24,9 @@ internal fun trackColor(trackId: String, saturation: Float = 0.55f, value: Float
     return Color.hsv(hue.toFloat(), saturation, value)
 }
 
+/** Every album cover has the same slightly rounded corners. */
+private val CoverCornerRadius = 5.dp
+
 /** The album cover, over a gradient of the song's own colour with a note on it, which stays when there is no cover. */
 @Composable
 internal fun CoverArt(
@@ -31,13 +34,12 @@ internal fun CoverArt(
     coverUrl: String?,
     contentDescription: String,
     size: Dp,
-    cornerRadius: Dp,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(cornerRadius))
+            .clip(RoundedCornerShape(CoverCornerRadius))
             .background(Brush.linearGradient(listOf(trackColor(trackId), trackColor(trackId.reversed(), value = 0.6f)))),
         contentAlignment = Alignment.Center,
     ) {

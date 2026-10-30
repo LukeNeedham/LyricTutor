@@ -47,13 +47,12 @@ internal fun SongHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        val coverShape = RoundedCornerShape(24.dp)
+        val coverShape = RoundedCornerShape(5.dp)
         CoverArt(
             trackId = track.trackId,
             coverUrl = track.coverUrl,
             contentDescription = stringResource(Res.string.song_cover_description),
             size = 220.dp,
-            cornerRadius = 24.dp,
             modifier = Modifier.shadow(elevation = 16.dp, shape = coverShape, clip = false),
         )
         Column(

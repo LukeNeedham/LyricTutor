@@ -19,7 +19,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -27,6 +37,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,8 +67,6 @@ import com.lukeneedham.lyrictutor.generated.resources.lyrics_loading
 import com.lukeneedham.lyrictutor.generated.resources.lyrics_pasted_note
 import com.lukeneedham.lyrictutor.generated.resources.song_error_network
 import com.lukeneedham.lyrictutor.generated.resources.song_error_unreadable
-import com.lukeneedham.lyrictutor.generated.resources.song_lyrics_hint
-import com.lukeneedham.lyrictutor.generated.resources.song_lyrics_title
 import com.lukeneedham.lyrictutor.generated.resources.song_loading
 import com.lukeneedham.lyrictutor.generated.resources.song_retry
 import com.lukeneedham.lyrictutor.ui.components.AppButton
@@ -100,6 +110,8 @@ internal fun SongPageContent(
     val uriHandler = LocalUriHandler.current
     // The sheet opens over the lower half of the page; the page height is what that is measured against
     var pageHeightPx by remember { mutableIntStateOf(0) }
+    // Where the selected word is on the screen, so that the dimming of the page can leave it out
+    var selectedBounds by remember { mutableStateOf<Rect?>(null) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -156,8 +168,8 @@ internal fun SongPageContent(
                     val hasNotice = lyricsFound != null && state.annotationStatus != AnnotationStatus.Idle
                     // The sheet covers the bottom of the song: the lines get room to scroll above it, and the tapped line is brought there
                     val sheetHeight = if (state.selectedWord != null) pageHeightPx / 2 else 0
-                    // The items before the first line: the header, the notice (when there is one) and the title of the lyrics
-                    val firstLineItem = 2 + if (hasNotice) 1 else 0
+                    // The items before the first line: the header, the notice and the note of pasted lyrics (when there are any)
+                    val firstLineItem = 1 + (if (hasNotice) 1 else 0) + (if (lyricsFound?.lyrics?.source == LyricsSourceKind.Pasted) 1 else 0)
                     LaunchedEffect(state.selectedWord, sheetHeight) {
                         val selected = state.selectedWord ?: return@LaunchedEffect
                         val target = firstLineItem + selected.lineIndex
@@ -199,12 +211,7 @@ internal fun SongPageContent(
                                 )
                             }
                         }
-                        item {
-                            LyricsTitle(
-                                showHint = lyricsFound != null,
-                                isPasted = lyricsFound?.lyrics?.source == LyricsSourceKind.Pasted,
-                            )
-                        }
+                        if (lyricsFound?.lyrics?.source == LyricsSourceKind.Pasted) item { PastedNote() }
                         when (val lyrics = state.lyrics) {
                             LyricsUiState.Loading -> item {
                                 Row(
@@ -226,7 +233,8 @@ internal fun SongPageContent(
                                     onWordClick = { word, language, token ->
                                         onWordClick(SelectedWord(word, language, lineIndex = index, tokenIndex = token))
                                     },
-                                    modifier = Modifier.padding(bottom = 14.dp),
+                                    modifier = Modifier.padding(bottom = 14.dp, top = if (index == 0) 24.dp else 0.dp),
+                                    onSelectedBoundsChange = { selectedBounds = it },
                                 )
                             }
 
@@ -248,6 +256,7 @@ internal fun SongPageContent(
             }
         }
         if (state is SongUiState.Loaded) {
+            WordScrim(isShown = state.selectedWord != null, hole = selectedBounds)
             WordSheet(
                 selected = state.selectedWord,
                 wiktionary = state.wiktionary,
@@ -259,26 +268,47 @@ internal fun SongPageContent(
     }
 }
 
+/** Dims the page while the word sheet is open, except for the selected word ([hole]), which stays as it was. It takes no touches. */
 @Composable
-private fun LyricsTitle(showHint: Boolean, isPasted: Boolean) {
+private fun WordScrim(isShown: Boolean, hole: Rect?) {
+    val alpha by animateFloatAsState(targetValue = if (isShown) 0.28f else 0f, label = "scrim")
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    if (alpha == 0f) return
+    val padding = with(LocalDensity.current) { 4.dp.toPx() }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { origin = it.positionInWindow() }
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawBehind {
+                drawRect(Color.Black.copy(alpha = alpha))
+                if (hole != null && isShown) {
+                    drawRoundRect(
+                        color = Color.Black,
+                        topLeft = Offset(hole.left - origin.x - padding, hole.top - origin.y - padding),
+                        size = Size(hole.width + 2 * padding, hole.height + 2 * padding),
+                        cornerRadius = CornerRadius(padding * 2),
+                        blendMode = BlendMode.Clear,
+                    )
+                }
+            },
+    )
+}
+
+@Composable
+private fun PastedNote() {
     val theme = AppTheme.current
-    Column(modifier = Modifier.padding(top = 32.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        AppText(text = stringResource(Res.string.song_lyrics_title), size = 20.sp, weight = FontWeight.Bold)
-        if (showHint) AppText(text = stringResource(Res.string.song_lyrics_hint), color = theme.onSurfaceVariant, size = 14.sp)
-        if (isPasted) {
-            AppText(
-                text = stringResource(Res.string.lyrics_pasted_note),
-                color = theme.onPrimaryContainer,
-                size = 12.sp,
-                weight = FontWeight.Medium,
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(theme.primaryContainer)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            )
-        }
-    }
+    AppText(
+        text = stringResource(Res.string.lyrics_pasted_note),
+        color = theme.onPrimaryContainer,
+        size = 12.sp,
+        weight = FontWeight.Medium,
+        modifier = Modifier
+            .padding(top = 24.dp, bottom = 4.dp)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(theme.primaryContainer)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    )
 }
 
 /** A message in the middle of the page, with something to do about it ([action]) when it is an error. */

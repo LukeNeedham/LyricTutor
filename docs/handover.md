@@ -52,7 +52,7 @@ Kotlin Multiplatform, Android target only: shared code in `commonMain`, Android-
    the meanings of its dictionary form. Results are kept per word and language while the page is open (not on disk).
 5. **Which part of speech**: if the page has several, `PartOfSpeechChooser` (Gemini, enum output `text/x.enum`, options = the page's own
    labels) says which one the word is used as in its line; only that sense is shown. With no key, a failure or no match, every sense is shown.
-6. The sheet has a fixed height (half the screen), the tapped word is highlighted and the song scrolls so it stays above the sheet. The
+6. The sheet has a fixed height (half the screen), the tapped word is coloured with the primary colour and left out of the dimming of the page (drawn by the page, `WordScrim`), and the song scrolls so it stays above the sheet. The
    credit at the bottom ("From Wiktionary, under the CC BY-SA license. Open the page.") is the link to the page at the language section
    (a Wiktionary search when there is no page).
 

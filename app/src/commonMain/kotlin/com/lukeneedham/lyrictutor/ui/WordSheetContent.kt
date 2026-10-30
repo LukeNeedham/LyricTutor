@@ -74,8 +74,8 @@ internal fun WordSheetContent(
                     icon = AppIcon.External,
                     contentDescription = stringResource(Res.string.word_open_wiktionary),
                     onClick = { onOpenUrl(wiktionaryUrl) },
-                    tint = theme.primary,
-                    background = theme.primaryContainer,
+                    tint = theme.secondary,
+                    background = theme.secondaryContainer,
                     containerSize = 36.dp,
                     iconSize = 20.dp,
                 )

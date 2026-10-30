@@ -57,7 +57,8 @@ internal fun WordSheet(
         shape = shape,
         containerColor = theme.surface,
         contentColor = theme.onSurface,
-        scrimColor = Color.Black.copy(alpha = 0.4f),
+        // The page draws the scrim itself, leaving the selected word out of it
+        scrimColor = Color.Transparent,
         dragHandle = {
             // The handle closes the sheet: its touch area is wider and taller than what is drawn
             Box(
