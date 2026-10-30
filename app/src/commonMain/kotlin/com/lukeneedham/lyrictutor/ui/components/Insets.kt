@@ -19,4 +19,5 @@ import androidx.compose.ui.unit.Dp
 internal fun navigationBarHeight(): Dp = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
 /** Keeps a page clear of a display cutout or bars at its sides (a phone in landscape), which only matter there. */
+@Composable
 internal fun Modifier.sideInsetsPadding(): Modifier = windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
