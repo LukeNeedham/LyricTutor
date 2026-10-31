@@ -10,7 +10,9 @@ import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.lyrics.LrclibLyricsSource
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSource
+import com.lukeneedham.lyrictutor.data.track.MultiSourceTrackResolver
 import com.lukeneedham.lyrictutor.data.track.SpotifyTrackResolver
+import com.lukeneedham.lyrictutor.data.track.YoutubeTrackResolver
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryClient
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
@@ -23,7 +25,7 @@ import org.koin.dsl.module
 
 object KoinModules {
     private val app = module {
-        single<TrackResolver> { SpotifyTrackResolver(client = get()) }
+        single<TrackResolver> { MultiSourceTrackResolver(spotify = SpotifyTrackResolver(client = get()), youtube = YoutubeTrackResolver(client = get())) }
 
         single<LyricsSource> { LrclibLyricsSource(client = get()) }
         single { LyricsRepository(songCache = get(), source = get()) }

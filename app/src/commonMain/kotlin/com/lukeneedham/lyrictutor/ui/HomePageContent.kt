@@ -47,11 +47,18 @@ import com.lukeneedham.lyrictutor.generated.resources.home_how_3_title
 import com.lukeneedham.lyrictutor.generated.resources.home_how_title
 import com.lukeneedham.lyrictutor.generated.resources.home_invalid_link
 import com.lukeneedham.lyrictutor.generated.resources.home_languages_title
+import com.lukeneedham.lyrictutor.generated.resources.home_artist_hint
 import com.lukeneedham.lyrictutor.generated.resources.home_link_hint
+import com.lukeneedham.lyrictutor.generated.resources.home_missing_name
+import com.lukeneedham.lyrictutor.generated.resources.home_mode_link
+import com.lukeneedham.lyrictutor.generated.resources.home_mode_name
+import com.lukeneedham.lyrictutor.generated.resources.home_song_hint
 import com.lukeneedham.lyrictutor.generated.resources.home_open_song
 import com.lukeneedham.lyrictutor.generated.resources.home_recents_title
 import com.lukeneedham.lyrictutor.generated.resources.home_title
 import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
+import com.lukeneedham.lyrictutor.ui.components.AppButton
+import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppIconButton
 import com.lukeneedham.lyrictutor.ui.components.AppIconImage
@@ -77,6 +84,9 @@ internal fun HomePageContent(
     onLanguageClick: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSong: (trackId: String) -> Unit,
+    onModeChange: (LookupMode) -> Unit = {},
+    onSongNameChange: (String) -> Unit = {},
+    onArtistNameChange: (String) -> Unit = {},
 ) {
     val theme = AppTheme.current
     Column(modifier = Modifier.fillMaxSize().background(theme.background).sideInsetsPadding()) {
@@ -87,9 +97,11 @@ internal fun HomePageContent(
         ) {
             item {
                 Hero(
-                    input = state.input,
-                    showInvalidLink = state.showInvalidLink,
+                    state = state,
                     onInputChange = onInputChange,
+                    onSongNameChange = onSongNameChange,
+                    onArtistNameChange = onArtistNameChange,
+                    onModeChange = onModeChange,
                     onSubmit = onSubmit,
                 )
             }
@@ -133,15 +145,26 @@ internal fun HomePageContent(
     }
 }
 
-/** The first thing to see: what the app does, and the box to paste the song link into. */
+/** The first thing to see: what the app does, and the ways to look a song up: a link, or the song name and artist. */
 @Composable
 private fun Hero(
-    input: String,
-    showInvalidLink: Boolean,
+    state: HomeUiState,
     onInputChange: (String) -> Unit,
+    onSongNameChange: (String) -> Unit,
+    onArtistNameChange: (String) -> Unit,
+    onModeChange: (LookupMode) -> Unit,
     onSubmit: () -> Unit,
 ) {
     val theme = AppTheme.current
+    val submitButton: @Composable () -> Unit = {
+        AppIconButton(
+            icon = AppIcon.Arrow,
+            contentDescription = stringResource(Res.string.home_open_song),
+            onClick = onSubmit,
+            tint = theme.onPrimary,
+            background = theme.primary,
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,33 +185,58 @@ private fun Hero(
             color = Color.White.copy(alpha = 0.85f),
             size = 15.sp,
         )
-        Spacer(modifier = Modifier.size(4.dp))
-        AppTextField(
-            value = input,
-            onValueChange = onInputChange,
-            placeholder = stringResource(Res.string.home_link_hint),
-            isError = showInvalidLink,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = { onSubmit() }),
-            trailing = {
-                AppIconButton(
-                    icon = AppIcon.Arrow,
-                    contentDescription = stringResource(Res.string.home_open_song),
-                    onClick = onSubmit,
-                    tint = theme.onPrimary,
-                    background = theme.primary,
-                )
-            },
-        )
-        if (showInvalidLink) {
-            AppText(
-                text = stringResource(Res.string.home_invalid_link),
-                color = Color.White,
-                size = 14.sp,
-                weight = FontWeight.Medium,
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppButton(
+                text = stringResource(Res.string.home_mode_link),
+                onClick = { onModeChange(LookupMode.Link) },
+                style = if (state.mode == LookupMode.Link) AppButtonStyle.Primary else AppButtonStyle.Tonal,
+            )
+            AppButton(
+                text = stringResource(Res.string.home_mode_name),
+                onClick = { onModeChange(LookupMode.Name) },
+                style = if (state.mode == LookupMode.Name) AppButtonStyle.Primary else AppButtonStyle.Tonal,
             )
         }
+        when (state.mode) {
+            LookupMode.Link -> {
+                AppTextField(
+                    value = state.input,
+                    onValueChange = onInputChange,
+                    placeholder = stringResource(Res.string.home_link_hint),
+                    isError = state.showInvalidLink,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(onGo = { onSubmit() }),
+                    trailing = submitButton,
+                )
+                if (state.showInvalidLink) HeroError(stringResource(Res.string.home_invalid_link))
+            }
+
+            LookupMode.Name -> {
+                AppTextField(
+                    value = state.songName,
+                    onValueChange = onSongNameChange,
+                    placeholder = stringResource(Res.string.home_song_hint),
+                    isError = state.showMissingName && state.songName.isBlank(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                )
+                AppTextField(
+                    value = state.artistName,
+                    onValueChange = onArtistNameChange,
+                    placeholder = stringResource(Res.string.home_artist_hint),
+                    isError = state.showMissingName && state.artistName.isBlank(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(onGo = { onSubmit() }),
+                    trailing = submitButton,
+                )
+                if (state.showMissingName) HeroError(stringResource(Res.string.home_missing_name))
+            }
+        }
     }
+}
+
+@Composable
+private fun HeroError(text: String) {
+    AppText(text = text, color = Color.White, size = 14.sp, weight = FontWeight.Medium)
 }
 
 @Composable
@@ -284,6 +332,21 @@ private fun PreviewInvalidLink() {
     AppTheme {
         HomePageContent(
             state = HomeUiState(input = "not a link", showInvalidLink = true),
+            onInputChange = {},
+            onSubmit = {},
+            onLanguageClick = {},
+            onOpenSettings = {},
+            onOpenSong = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewNameMode() {
+    AppTheme {
+        HomePageContent(
+            state = HomeUiState(mode = LookupMode.Name, songName = "Si Me Voy"),
             onInputChange = {},
             onSubmit = {},
             onLanguageClick = {},

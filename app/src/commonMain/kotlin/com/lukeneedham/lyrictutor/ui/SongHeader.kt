@@ -19,10 +19,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukeneedham.lyrictutor.data.track.TrackIds
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
+import com.lukeneedham.lyrictutor.generated.resources.song_play_on_youtube
 import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
 import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
@@ -96,7 +98,12 @@ internal fun SongHeader(
                 horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                AppButton(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay, icon = AppIcon.Play)
+                when {
+                    TrackIds.isByName(track.trackId) -> Unit // typed in by name: there is nowhere to play it
+                    TrackIds.isYoutube(track.trackId) ->
+                        AppButton(text = stringResource(Res.string.song_play_on_youtube), onClick = onPlay, icon = AppIcon.Play)
+                    else -> AppButton(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay, icon = AppIcon.Play)
+                }
                 if (canTranslateAgain) {
                     AppButton(
                         text = stringResource(Res.string.song_translate_again),
