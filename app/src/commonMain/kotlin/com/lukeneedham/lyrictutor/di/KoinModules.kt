@@ -1,6 +1,5 @@
 package com.lukeneedham.lyrictutor.di
 
-import com.lukeneedham.common.DebugKit
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
 import com.lukeneedham.lyrictutor.data.annotation.GeminiAnnotator
 import com.lukeneedham.lyrictutor.data.annotation.GeminiModelCatalog
@@ -46,7 +45,7 @@ object KoinModules {
                 partOfSpeechChooser = get(),
                 artColorExtractor = get(),
             ) }
-        viewModel { SettingsViewModel(isDebugEnabled = DebugKit.enabled, settingsStore = get(), modelCatalog = get()) }
+        viewModel { SettingsViewModel(isDebugEnabled = DebugFlags.isEnabled, settingsStore = get(), modelCatalog = get()) }
     }
 
     val modules: List<Module> = listOf(app)
