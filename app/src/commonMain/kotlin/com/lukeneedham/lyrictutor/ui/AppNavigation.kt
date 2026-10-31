@@ -6,7 +6,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
+import com.lukeneedham.lyrictutor.data.track.TrackIds
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
@@ -43,9 +43,9 @@ private const val SLIDE_MILLIS = 320
 fun AppNavigation(sharedText: String? = null) {
     val backStack = rememberNavBackStack(backStackConfig, Route.Home)
 
-    // Text shared to the app (Spotify's Share sheet): open the song it names, if any
+    // Text shared to the app (the Share sheet of Spotify or YouTube): open the song it names, if any
     LaunchedEffect(sharedText) {
-        val trackId = sharedText?.let(SpotifyLinkParser::parseTrackId) ?: return@LaunchedEffect
+        val trackId = sharedText?.let(TrackIds::parseLink) ?: return@LaunchedEffect
         backStack.add(Route.Song(trackId))
     }
 

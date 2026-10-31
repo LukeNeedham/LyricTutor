@@ -8,15 +8,20 @@
     <!-- Home -->
     <string name="home_title">LyricTutor</string>
     <string name="home_hero_title">Learn a language from the songs you love</string>
-    <string name="home_hero_subtitle">Paste a Spotify link to see the lyrics with a translation, and tap any word to understand it.</string>
-    <string name="home_link_hint">Paste a Spotify song link</string>
+    <string name="home_hero_subtitle">Paste a Spotify or YouTube link, or search by song and artist, to see the lyrics with a translation. Tap any word to understand it.</string>
+    <string name="home_link_hint">Paste a Spotify or YouTube link</string>
+    <string name="home_mode_link">Link</string>
+    <string name="home_mode_name">Song and artist</string>
+    <string name="home_song_hint">Song name</string>
+    <string name="home_artist_hint">Artist</string>
+    <string name="home_missing_name">Enter both the song name and the artist.</string>
     <string name="home_open_song">Open song</string>
-    <string name="home_invalid_link">That is not a Spotify song link. Use Share, then Copy link, in Spotify.</string>
+    <string name="home_invalid_link">That is not a Spotify or YouTube song link. Use Share, then Copy link, in the app.</string>
     <string name="home_languages_title">Languages</string>
     <string name="home_recents_title">Recent songs</string>
     <string name="home_how_title">How it works</string>
     <string name="home_how_1_title">Pick a song</string>
-    <string name="home_how_1_body">Share it to LyricTutor from Spotify, or paste its link above.</string>
+    <string name="home_how_1_body">Share it to LyricTutor from Spotify or YouTube, paste its link, or type its name and artist.</string>
     <string name="home_how_2_title">Read along</string>
     <string name="home_how_2_body">Every line of the lyrics comes with its English translation.</string>
     <string name="home_how_3_title">Tap any word</string>
@@ -25,10 +30,11 @@
     <!-- Song -->
     <string name="song_loading">Loading the song…</string>
     <string name="song_cover_description">Album cover</string>
-    <string name="song_error_network">Could not reach Spotify. Check your connection.</string>
-    <string name="song_error_unreadable">Could not read this song from Spotify.</string>
+    <string name="song_error_network">Could not reach the song's website. Check your connection.</string>
+    <string name="song_error_unreadable">Could not read this song from its link.</string>
     <string name="song_retry">Try again</string>
     <string name="song_play_on_spotify">Play on Spotify</string>
+    <string name="song_play_on_youtube">Play on YouTube</string>
     <string name="song_translate_again">Translate again</string>
 
     <!-- Lyrics -->
