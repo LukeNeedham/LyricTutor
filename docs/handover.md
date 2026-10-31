@@ -28,7 +28,7 @@ Not built: saved vocabulary, highlighting the line that is playing, `spotify.lin
 ## 2. How it works
 
 Kotlin Multiplatform, Android target only: shared code in `commonMain`, Android-only code (Room, DataStore, Keystore, `App`,
-`MainActivity`) in `androidMain`. Koin: `KoinModules` (`commonMain/di`) and `AndroidModule` (`androidMain/di`, the storage).
+`MainActivity`) in `androidMain`. Dependency injection is set up in accordance with the architecture in the [common repo](https://github.com/LukeNeedham/ci-workflows/blob/main/docs/new-app.md#6-app-architecture).
 
 ### Pages
 `Home` (link box, recents, Settings), `Song(trackId)` (cover, title, artists, Play on Spotify, lyrics, translations, word sheet),

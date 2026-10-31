@@ -68,7 +68,7 @@ What is in the repo, in `app/src`:
 
 | Source set | Contents |
 |---|---|
-| `commonMain` | `DebugKitSetup.kt` (`initDebugKit(isDebug)`); `di/AppModule.kt` (Koin); `ui/`: `Root`, `AppNavigation` (back stack saved with a `SavedStateConfiguration` that registers every route), `Router` (exhaustive, no `else`), `Route` (`Settings`, `Debug`, `Logs`, `Crashes`), `SettingsPage`, `SettingsPageContent` (the title and the library's `DebugButton`), `SettingsViewModel`, `SettingsUiState`; `ui/theme/`: `AppTheme` (own theme, no Material), `AppThemeValues`, `ToDebugTheme`; `composeResources/values/strings.xml` |
+| `commonMain` | `DebugKitSetup.kt` (`initDebugKit(isDebug)`); `ui/`: `Root`, `AppNavigation` (back stack saved with a `SavedStateConfiguration` that registers every route), `Router` (exhaustive, no `else`), `Route` (`Settings`, `Debug`, `Logs`, `Crashes`), `SettingsPage`, `SettingsPageContent` (the title and the library's `DebugButton`), `SettingsViewModel`, `SettingsUiState`; `ui/theme/`: `AppTheme` (own theme, no Material), `AppThemeValues`, `ToDebugTheme`; `composeResources/values/strings.xml` |
 | `androidMain` | `App` (`initDebugKit(BuildConfig.DEBUG)` first, then Koin), `MainActivity` (only `setContent { Root() }`), the manifest (`INTERNET`), resources (launcher icon: adaptive in `mipmap-anydpi-v26`, plain layer-list in `mipmap-anydpi`; the app name; the theme) |
 | `androidDebug` | The `screenshot` package: `SettingsPageScreenshot` and `order.txt` |
 | `commonTest` | `SettingsViewModelTest` (`kotlin.test`) |
@@ -109,9 +109,9 @@ them here). The ones that matter most when adding features:
   `stringResource(Res.string.x)`, with `Res` in `com.lukeneedham.lyrictutor.generated.resources`). The app name for the launcher is in
   `androidMain/res/values/strings.xml`. Lyrics, translations and annotations are content, not UI strings.
 - **Kotlin Multiplatform**: nothing Android-only in `commonMain` (no `android.*`, `BuildConfig`, `java.*`, `R`, Room, DataStore, Media3).
-  Put Android implementations of an interface in `androidMain` and bind them in an Android Koin module started in `App`. Tests go in
+  Put Android implementations of an interface in `androidMain`. Tests go in
   `commonTest` with `kotlin.test` and names without spaces. Never add `iosX64`; see `docs/app-shell.md` of ci-workflows to add a target.
-- **MVVM**, Koin constructor injection (classes never call Koin), coroutines and Flow, one-off events through a `Channel` (never in
+- **MVVM**, coroutines and Flow, one-off events through a `Channel` (never in
   `UiState`), touch targets at least 48dp, the library's `Logger` instead of `Log`/`println` (log the failures you catch).
 - **Previews must render** (CI fails the PR otherwise) and be deterministic (fixed data, no time or randomness).
 - The stop hook's warnings about "unpushed" or "Unverified" commits by `github-actions[bot]` are CI's own commits: run `git fetch origin`
@@ -146,7 +146,7 @@ Concrete shapes that fit the rules, for the features below:
 - **Interfaces in `commonMain`, implementations where they belong.** `TrackResolver`, `LyricsRepository`, `LyricsAnnotator`,
   `SettingsStore`, `SongCache`. Network code (Ktor, HTML parsing with plain string and regex work, JSON with `kotlinx.serialization`)
   can be fully common: `HttpClient()` without an engine picks OkHttp on Android. Storage (Room for songs and annotations, DataStore for
-  settings) is Android-only for now: interface in `commonMain`, implementation and Koin module in `androidMain`.
+  settings) is Android-only for now: interface in `commonMain`, implementation in `androidMain`.
 - **The shared text from Spotify's Share sheet** arrives in `MainActivity` (an `ACTION_SEND`, `text/plain` intent filter in the
   manifest). `MainActivity` may hand `Root` what only the activity can provide, as a parameter (`docs/app-shell.md`): pass the shared text
   down and let `Root` give it to the navigation, like AppHub does with its deep link.
