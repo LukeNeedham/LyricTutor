@@ -14,6 +14,7 @@ import com.lukeneedham.lyrictutor.data.track.MultiSourceTrackResolver
 import com.lukeneedham.lyrictutor.data.track.SpotifyTrackResolver
 import com.lukeneedham.lyrictutor.data.track.YoutubeTrackResolver
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
+import com.lukeneedham.lyrictutor.data.track.TrackSearcher
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryClient
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
 import com.lukeneedham.lyrictutor.ui.HomeViewModel
@@ -27,7 +28,9 @@ object KoinModules {
     private val app = module {
         single<TrackResolver> { MultiSourceTrackResolver(spotify = SpotifyTrackResolver(client = get()), youtube = YoutubeTrackResolver(client = get())) }
 
-        single<LyricsSource> { LrclibLyricsSource(client = get()) }
+        single { LrclibLyricsSource(client = get()) }
+        single<LyricsSource> { get<LrclibLyricsSource>() }
+        single<TrackSearcher> { get<LrclibLyricsSource>() }
         single { LyricsRepository(songCache = get(), source = get()) }
 
         single<WiktionaryLookup> { WiktionaryClient(client = get(), pageCache = get()) }
@@ -36,7 +39,7 @@ object KoinModules {
         single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
         single { AnnotationRepository(songCache = get(), annotator = get()) }
 
-        viewModel { HomeViewModel(songCache = get()) }
+        viewModel { HomeViewModel(songCache = get(), trackSearcher = get()) }
         viewModel { (trackId: String) -> SongViewModel(
                 trackId = trackId,
                 trackResolver = get(),

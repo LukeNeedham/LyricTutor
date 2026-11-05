@@ -13,6 +13,8 @@ data class HomeUiState(
     val artistName: String = "",
     /** Set when the last attempt in [LookupMode.Name] had no song name or no artist. */
     val showMissingName: Boolean = false,
+    /** Set while the song typed in [LookupMode.Name] is being looked up. */
+    val isSearching: Boolean = false,
     /** The songs opened before, most recent first. */
     val recents: List<TrackInfo> = emptyList(),
     /** The languages of each song, by track id: the most common first. */
@@ -22,7 +24,7 @@ data class HomeUiState(
 ) {
     /** Every language of the songs, the one that is in the most songs first. */
     val languages: List<String>
-        get() = songLanguages.values.flatten().groupingBy { it }.eachCount().entries
+        get() = songLanguages.filterKeys { id -> recents.any { it.trackId == id } }.values.flatten().groupingBy { it }.eachCount().entries
             .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key }).map { it.key }
 
     /** [recents], only the songs with [selectedLanguage] when there is one. */

@@ -64,6 +64,8 @@ import com.lukeneedham.lyrictutor.ui.components.AppIconButton
 import com.lukeneedham.lyrictutor.ui.components.AppIconImage
 import com.lukeneedham.lyrictutor.ui.components.AppToolbar
 import com.lukeneedham.lyrictutor.ui.components.SettingsAction
+import com.lukeneedham.lyrictutor.ui.components.Spinner
+import com.lukeneedham.lyrictutor.ui.components.SwipeToDismiss
 import com.lukeneedham.lyrictutor.ui.components.navigationBarHeight
 import com.lukeneedham.lyrictutor.ui.components.sideInsetsPadding
 import com.lukeneedham.lyrictutor.ui.components.AppText
@@ -87,6 +89,7 @@ internal fun HomePageContent(
     onModeChange: (LookupMode) -> Unit = {},
     onSongNameChange: (String) -> Unit = {},
     onArtistNameChange: (String) -> Unit = {},
+    onRemoveSong: (trackId: String) -> Unit = {},
 ) {
     val theme = AppTheme.current
     Column(modifier = Modifier.fillMaxSize().background(theme.background).sideInsetsPadding()) {
@@ -138,7 +141,9 @@ internal fun HomePageContent(
                     )
                 }
                 items(state.shownSongs, key = { it.trackId }) { track ->
-                    RecentSongRow(track = track, onClick = { onOpenSong(track.trackId) })
+                    SwipeToDismiss(onDismiss = { onRemoveSong(track.trackId) }, modifier = Modifier.animateItem()) {
+                        RecentSongRow(track = track, onClick = { onOpenSong(track.trackId) })
+                    }
                 }
             }
         }
@@ -157,7 +162,7 @@ private fun Hero(
 ) {
     val theme = AppTheme.current
     val submitButton: @Composable () -> Unit = {
-        AppIconButton(
+        if (state.isSearching) Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) { Spinner() } else AppIconButton(
             icon = AppIcon.Arrow,
             contentDescription = stringResource(Res.string.home_open_song),
             onClick = onSubmit,

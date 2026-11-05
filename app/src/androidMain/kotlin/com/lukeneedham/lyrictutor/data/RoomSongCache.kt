@@ -48,6 +48,8 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
         )
     }
 
+    override suspend fun deleteTrack(trackId: String) = dao.deleteSong(trackId)
+
     override suspend fun getLyrics(trackId: String): Lyrics? =
         dao.getLyrics(trackId)?.let { json.decodeFromString(Lyrics.serializer(), it.json) }
 
