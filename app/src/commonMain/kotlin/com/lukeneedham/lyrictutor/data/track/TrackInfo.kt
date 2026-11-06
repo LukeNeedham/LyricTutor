@@ -12,4 +12,8 @@ data class TrackInfo(
     val coverUrl: String?,
     val durationSeconds: Int?,
     val releaseDate: String?,
+    /** The song on Spotify, when it was found by looking the song up by name; else null (a Spotify song has it in its id). */
+    val spotifyUrl: String? = null,
+    /** The song on YouTube, when it was found by looking the song up by name; else null (a YouTube song has it in its id). */
+    val youtubeUrl: String? = null,
 )

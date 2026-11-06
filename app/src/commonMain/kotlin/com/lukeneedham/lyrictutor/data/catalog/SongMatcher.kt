@@ -1,9 +1,9 @@
-package com.lukeneedham.lyrictutor.data.cover
+package com.lukeneedham.lyrictutor.data.catalog
 
 import kotlin.math.abs
 
 /** Decides whether a result of a cover provider is the song that was asked for. Pure, so it is tested without a network. */
-object CoverMatcher {
+object SongMatcher {
     /** A result further than this from the song's duration is taken to be another recording. */
     const val MAX_DURATION_DIFFERENCE_SECONDS = 8
 

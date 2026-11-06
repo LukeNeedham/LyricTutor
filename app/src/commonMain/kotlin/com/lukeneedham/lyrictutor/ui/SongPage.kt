@@ -25,5 +25,6 @@ fun SongPage(trackId: String, onBack: () -> Unit, onOpenSettings: () -> Unit) {
         onOpenSettings = onOpenSettings,
         onWordClick = viewModel::onWordClick,
         onWordDismiss = viewModel::onWordDismiss,
+        onPlayProviderChange = viewModel::onPlayProviderChange,
     )
 }

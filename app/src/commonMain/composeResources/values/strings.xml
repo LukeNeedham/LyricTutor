@@ -35,6 +35,8 @@
     <string name="song_retry">Try again</string>
     <string name="song_play_on_spotify">Play on Spotify</string>
     <string name="song_play_on_youtube">Play on YouTube</string>
+    <string name="provider_spotify">Spotify</string>
+    <string name="provider_youtube">YouTube</string>
     <string name="song_translate_again">Translate again</string>
 
     <!-- Lyrics -->

@@ -23,12 +23,5 @@ object TrackIds {
     fun parseLink(text: String): String? =
         SpotifyLinkParser.parseTrackId(text) ?: YoutubeLinkParser.parseVideoId(text)?.let(::youtube)
 
-    /** The link that plays the song in its own app, or null for a song that has no place to play (one typed in by name). */
-    fun playUrl(trackId: String): String? = when {
-        isYoutube(trackId) -> YoutubeLinkParser.videoUrl(trackId.removePrefix(YOUTUBE_PREFIX))
-        isByName(trackId) -> null
-        else -> SpotifyLinkParser.trackUrl(trackId)
-    }
-
     private fun normalize(text: String) = text.trim().lowercase().replace(Regex("\\s+"), " ")
 }

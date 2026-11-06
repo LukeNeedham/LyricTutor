@@ -1,4 +1,4 @@
-package com.lukeneedham.lyrictutor.data.cover
+package com.lukeneedham.lyrictutor.data.catalog
 
 import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.apiJson
@@ -11,10 +11,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** Album art from the Deezer API (public, no key). */
-class DeezerCoverFinder(private val client: HttpClient) : CoverFinder {
+/** The Deezer API (public, no key): album art, and the song's page on Deezer. */
+class DeezerCatalog(private val client: HttpClient) : SongCatalog {
 
-    override suspend fun find(title: String, artist: String, durationSeconds: Int?): String? = try {
+    override suspend fun find(title: String, artist: String, durationSeconds: Int?): CatalogMatch? = try {
         val response = client.get("https://api.deezer.com/search") {
             parameter("q", "$title $artist")
             parameter("limit", 10)
@@ -24,8 +24,8 @@ class DeezerCoverFinder(private val client: HttpClient) : CoverFinder {
             null
         } else {
             apiJson.decodeFromString<DeezerAnswer>(response.bodyAsText()).data
-                .firstOrNull { CoverMatcher.isMatch(title, artist, durationSeconds, it.title, it.artist?.name, it.duration) }
-                ?.album?.coverXl?.takeIf { it.isNotBlank() }
+                .firstOrNull { SongMatcher.isMatch(title, artist, durationSeconds, it.title, it.artist?.name, it.duration) }
+                ?.let { CatalogMatch(coverUrl = it.album?.coverXl?.takeIf { cover -> cover.isNotBlank() }, pageUrl = it.link) }
         }
     } catch (e: CancellationException) {
         throw e
@@ -40,6 +40,7 @@ class DeezerCoverFinder(private val client: HttpClient) : CoverFinder {
     @Serializable
     private class DeezerTrack(
         val title: String? = null,
+        val link: String? = null,
         val duration: Int? = null,
         val artist: DeezerArtist? = null,
         val album: DeezerAlbum? = null,

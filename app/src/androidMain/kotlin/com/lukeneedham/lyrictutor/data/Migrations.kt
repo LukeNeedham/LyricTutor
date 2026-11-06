@@ -23,3 +23,11 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         )
     }
 }
+
+/** Adds the links of a song on Spotify and YouTube. Everything else stays. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `song` ADD COLUMN `spotifyUrl` TEXT")
+        db.execSQL("ALTER TABLE `song` ADD COLUMN `youtubeUrl` TEXT")
+    }
+}

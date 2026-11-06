@@ -9,6 +9,8 @@ import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.song.SongCache
+import com.lukeneedham.lyrictutor.data.settings.PlayProviderStore
+import com.lukeneedham.lyrictutor.data.track.PlayProvider
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.track.TrackResolveException
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
@@ -31,6 +33,7 @@ class SongViewModel(
     private val wiktionaryLookup: WiktionaryLookup,
     private val partOfSpeechChooser: PartOfSpeechChooser,
     private val artColorExtractor: ArtColorExtractor,
+    private val playProviderStore: PlayProviderStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
@@ -41,8 +44,21 @@ class SongViewModel(
     private val wiktionaryCache = mutableMapOf<String, WiktionaryUiState>()
     private val partOfSpeechChoices = mutableMapOf<String, String>()
 
+    /** The service the play button uses: the same on every page, so it is kept on the device and read here. */
+    private var playProvider = PlayProvider.Spotify
+
     init {
+        viewModelScope.launch {
+            playProviderStore.provider.collect { provider ->
+                playProvider = provider
+                updateLoaded { it.copy(playProvider = provider) }
+            }
+        }
         load()
+    }
+
+    fun onPlayProviderChange(provider: PlayProvider) {
+        viewModelScope.launch { playProviderStore.set(provider) }
     }
 
     fun onRetry() = load()
@@ -141,7 +157,7 @@ class SongViewModel(
                     return@launch
                 }
             songCache.saveTrack(track)
-            _uiState.value = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Loading)
+            _uiState.value = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Loading, playProvider = playProvider)
             loadLyrics(track)
             loadArtColors(track)
         }

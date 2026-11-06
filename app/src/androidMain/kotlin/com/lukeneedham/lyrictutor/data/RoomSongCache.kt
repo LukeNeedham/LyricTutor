@@ -44,6 +44,8 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
                 durationSeconds = track.durationSeconds,
                 releaseDate = track.releaseDate,
                 lastOpened = System.currentTimeMillis(),
+                spotifyUrl = track.spotifyUrl,
+                youtubeUrl = track.youtubeUrl,
             ),
         )
     }
@@ -85,5 +87,7 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
         coverUrl = coverUrl,
         durationSeconds = durationSeconds,
         releaseDate = releaseDate,
+        spotifyUrl = spotifyUrl,
+        youtubeUrl = youtubeUrl,
     )
 }

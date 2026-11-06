@@ -28,11 +28,4 @@ class TrackIdsTest {
         assertTrue(TrackIds.isByName(TrackIds.byName("a", "b")))
         assertFalse(TrackIds.isSpotify("yt:dQw4w9WgXcQ"))
     }
-
-    @Test
-    fun playUrls() {
-        assertEquals("https://open.spotify.com/track/$spotifyId", TrackIds.playUrl(spotifyId))
-        assertEquals("https://www.youtube.com/watch?v=dQw4w9WgXcQ", TrackIds.playUrl("yt:dQw4w9WgXcQ"))
-        assertNull(TrackIds.playUrl(TrackIds.byName("a", "b")))
-    }
 }
