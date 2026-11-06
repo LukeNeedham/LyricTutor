@@ -1,7 +1,9 @@
 package com.lukeneedham.lyrictutor.data.lyrics
 
 import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.track.TrackIds
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
+import com.lukeneedham.lyrictutor.data.track.TrackSearcher
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
@@ -21,7 +23,7 @@ import kotlinx.coroutines.sync.withLock
  * Looks lyrics up on LRCLIB (crowd-sourced, no key). It rate-limits and dislikes parallel requests, so requests go one at a time.
  * Order: exact lookup with the first artist, search with the first artist, then both again with the whole artist string.
  */
-class LrclibLyricsSource(private val client: HttpClient) : LyricsSource {
+class LrclibLyricsSource(private val client: HttpClient) : LyricsSource, TrackSearcher {
 
     private val oneAtATime = Mutex()
 
@@ -32,6 +34,42 @@ class LrclibLyricsSource(private val client: HttpClient) : LyricsSource {
     } catch (e: Exception) {
         Logger.e("LRCLIB lookup failed for ${track.title}", e)
         Result.failure(e)
+    }
+
+    /** The first match that has lyrics, with LRCLIB's own spelling of its name and artist. Tries the fields, then a free-text query. */
+    override suspend fun findTrack(title: String, artist: String): Result<TrackInfo?> = try {
+        val byFields = searchTracks { parameter("track_name", title); parameter("artist_name", artist) }
+        val best = LrclibTrackDto.pickBest(byFields, null)
+            ?: LrclibTrackDto.pickBest(searchTracks { parameter("q", "$title $artist") }, null)
+        Result.success(best?.toTrack())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Logger.e("LRCLIB search failed for $title", e)
+        Result.failure(e)
+    }
+
+    private suspend fun searchTracks(parameters: HttpRequestBuilder.() -> Unit): List<LrclibTrackDto> {
+        val response = request("search", parameters)
+        if (response.status == HttpStatusCode.NotFound) return emptyList()
+        if (!response.status.isSuccess()) error("LRCLIB answered ${response.status}")
+        return LrclibTrackDto.parseList(response.bodyAsText())
+    }
+
+    private fun LrclibTrackDto.toTrack(): TrackInfo? {
+        val name = trackName?.trim().orEmpty()
+        val artistName = artistName?.trim().orEmpty()
+        if (name.isEmpty() || artistName.isEmpty()) return null
+        return TrackInfo(
+            trackId = TrackIds.byName(name, artistName),
+            title = name,
+            // LRCLIB's own spelling, so the lyrics lookup that follows is an exact hit
+            searchTitle = name,
+            artists = listOf(artistName),
+            coverUrl = null,
+            durationSeconds = duration?.toInt(),
+            releaseDate = null,
+        )
     }
 
     private suspend fun lookUp(track: TrackInfo): Lyrics? {

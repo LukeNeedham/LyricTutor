@@ -14,4 +14,6 @@ data class SongEntity(
     val durationSeconds: Int?,
     val releaseDate: String?,
     val lastOpened: Long,
+    val spotifyUrl: String? = null,
+    val youtubeUrl: String? = null,
 )

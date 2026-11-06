@@ -30,6 +30,7 @@ class AnnotationRepositoryTest {
         override val recents: Flow<List<TrackInfo>> = flowOf(emptyList())
         override suspend fun getTrack(trackId: String): TrackInfo? = null
         override suspend fun saveTrack(track: TrackInfo) = Unit
+        override suspend fun deleteTrack(trackId: String) = Unit
         override suspend fun getLyrics(trackId: String): Lyrics? = null
         override suspend fun saveLyrics(trackId: String, lyrics: Lyrics) = Unit
         override suspend fun getAnnotations(trackId: String) = annotations.values.toList()

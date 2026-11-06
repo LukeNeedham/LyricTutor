@@ -4,9 +4,11 @@ import com.lukeneedham.lyrictutor.data.AppDatabase
 import com.lukeneedham.lyrictutor.data.CoilArtColorExtractor
 import com.lukeneedham.lyrictutor.data.art.ArtColorExtractor
 import com.lukeneedham.lyrictutor.data.DataStoreSettingsStore
+import com.lukeneedham.lyrictutor.data.DataStorePlayProviderStore
 import com.lukeneedham.lyrictutor.data.KeystoreCipher
 import com.lukeneedham.lyrictutor.data.RoomWiktionaryPageCache
 import com.lukeneedham.lyrictutor.data.RoomSongCache
+import com.lukeneedham.lyrictutor.data.settings.PlayProviderStore
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryPageCache
@@ -20,6 +22,7 @@ object AndroidModule {
         single { DatabaseFactory.create(androidContext()) }
         single { KeystoreCipher() }
         single<SettingsStore> { DataStoreSettingsStore(context = androidContext(), cipher = get()) }
+        single<PlayProviderStore> { DataStorePlayProviderStore(context = androidContext()) }
         single<ArtColorExtractor> { CoilArtColorExtractor(context = androidContext()) }
         single<WiktionaryPageCache> { RoomWiktionaryPageCache(dao = get<AppDatabase>().wiktionaryPageDao()) }
         single<SongCache> { RoomSongCache(dao = get<AppDatabase>().songDao()) }

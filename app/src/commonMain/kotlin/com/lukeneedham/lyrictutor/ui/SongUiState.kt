@@ -2,6 +2,7 @@ package com.lukeneedham.lyrictutor.ui
 
 import com.lukeneedham.lyrictutor.data.annotation.LineAnnotation
 import com.lukeneedham.lyrictutor.data.art.ArtColors
+import com.lukeneedham.lyrictutor.data.track.PlayProvider
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 
 sealed interface SongUiState {
@@ -10,6 +11,8 @@ sealed interface SongUiState {
     data class Loaded(
         val track: TrackInfo,
         val lyrics: LyricsUiState,
+        /** The service the play button uses; the same on every page. */
+        val playProvider: PlayProvider = PlayProvider.Spotify,
         /** The two colours of the cover, once read: the song's page is painted with them. */
         val artColors: ArtColors? = null,
         /** Whether reading the colours is over (with or without colours): until then the parts of the page painted with them wait. */

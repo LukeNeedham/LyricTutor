@@ -14,7 +14,7 @@ what was learned, and the work that remains.
 
 ## 1. What the app is, and its state
 
-The user gives the app a Spotify song link (typed, or shared from Spotify's Share sheet). The app reads the song's details, finds its
+The user gives the app a song: a Spotify or YouTube link (typed, or shared from the Share sheet), or a song name and artist typed on Home (`LookupMode`). The app reads the song's details, finds its
 lyrics, shows them line by line with an English translation, and lets the user tap any word to see what Wiktionary says about it. It is a
 personal app, built for learning from songs. **First languages: Spanish and Dutch**, with no language-specific code (generic).
 
@@ -36,6 +36,8 @@ Kotlin Multiplatform, Android target only: shared code in `commonMain`, Android-
 `XUiState`, with `Route.X`. The word sheet is `WordSheet` (container) + `WordSheetContent`, part of the Song page.
 
 ### The flow of a song (`SongViewModel`)
+**Track ids** (`TrackIds`): a bare Spotify id, `yt:<video id>` (YouTube, read by `YoutubeTrackResolver` through the public oEmbed answer; `YoutubeTitleParser` guesses song and artist from the video title and channel, no duration), or `name:<title>|<artist>` (typed in: `HomeViewModel` asks `TrackSearcher` (LRCLIB `search`, by fields, then a free-text `q`) for the match, and saves and shows the **match's** title and artist, not the typed words, so the id is canonical; with no match or no connection the typed words are used. No Play button). **Covers and links** (also for YouTube songs, in place of the video frame): `TrackExtrasFinder` asks `SongCatalog` (iTunes Search, then Deezer; a result counts only if `SongMatcher` agrees on title, first artist and, when known, duration within 8 s), then `SongLinkPageFinder` turns the catalog's page into the song's Spotify and YouTube links by **reading the public song.link page** (`SongLinkPageParser` takes the first Spotify track and YouTube watch URL in the HTML; **Odesli's API was retired**: 401, then 410 after 2026-07-31, no keys given; the pages are said to be unaffected; scraping, unverified, can break), saved on the song (`spotifyUrl`, `youtubeUrl`; Room version 4 + `MIGRATION_3_4`). Unverified against the live APIs. **Play button:** one button plus a dropdown (`PlayProviderDropdown`); the choice is `PlayProviderStore` (DataStore `player`), one value for every song page, default Spotify. `TrackLinks.playUrl` gives the song's own link, or a search on that service when none is known (so both are always selectable). `SongViewModel.loadOtherLinks`: when a Spotify song has no YouTube link (or a YouTube song no Spotify link), its song.link page is read with the song's own URL and the result is saved on the song; asked again at the next opening when nothing was found. A song is **swiped away** on Home (`SwipeToDismiss`): that only deletes its `song` row; its lyrics and translations stay, so adding it again is free. `MultiSourceTrackResolver` picks the resolver. All three are **new and unverified on a device** (the sandbox cannot reach YouTube). A YouTube video that is not a plain music upload may give a wrong title or artist.
+
 1. **Track**: the cache (`SongCache`), else `SpotifyTrackResolver` fetches `open.spotify.com/track/<id>` and `SpotifyPageParser` reads the
    `og:` and `music:` meta tags. `TitleCleaner` makes the search title (no "(with …)", "(feat. …)", remaster suffixes).
 2. **Lyrics**: `LyricsRepository`: the cache, else `LrclibLyricsSource` (exact lookup, then search by closest duration within 8 s, each

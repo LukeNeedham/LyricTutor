@@ -19,10 +19,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukeneedham.lyrictutor.data.track.PlayProvider
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
 import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
+import com.lukeneedham.lyrictutor.generated.resources.song_play_on_youtube
 import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
 import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
@@ -44,7 +46,9 @@ internal fun SongHeader(
     languages: List<String>,
     /** Whether the colours of the cover are read: the buttons wait for them, so they never show in the app's own colours first. */
     showActions: Boolean,
+    playProvider: PlayProvider,
     onPlay: () -> Unit,
+    onPlayProviderChange: (PlayProvider) -> Unit,
     onTranslateAgain: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -96,7 +100,20 @@ internal fun SongHeader(
                 horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                AppButton(text = stringResource(Res.string.song_play_on_spotify), onClick = onPlay, icon = AppIcon.Play)
+                // One play button, and under it the service it plays on: the same one on every song page
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    AppButton(
+                        text = stringResource(
+                            when (playProvider) {
+                                PlayProvider.Spotify -> Res.string.song_play_on_spotify
+                                PlayProvider.YouTube -> Res.string.song_play_on_youtube
+                            },
+                        ),
+                        onClick = onPlay,
+                        icon = AppIcon.Play,
+                    )
+                    PlayProviderDropdown(selected = playProvider, onSelect = onPlayProviderChange)
+                }
                 if (canTranslateAgain) {
                     AppButton(
                         text = stringResource(Res.string.song_translate_again),
@@ -108,7 +125,7 @@ internal fun SongHeader(
             }
         } else {
             // The room the buttons will take, so that the lyrics do not jump down when they come
-            Spacer(modifier = Modifier.padding(top = 14.dp).height(48.dp))
+            Spacer(modifier = Modifier.padding(top = 14.dp).height(96.dp))
         }
     }
 }
@@ -130,7 +147,9 @@ private fun Preview() {
             canTranslateAgain = true,
             languages = listOf("Spanish", "English"),
             showActions = true,
+            playProvider = PlayProvider.Spotify,
             onPlay = {},
+            onPlayProviderChange = {},
             onTranslateAgain = {},
             modifier = Modifier.padding(16.dp),
         )

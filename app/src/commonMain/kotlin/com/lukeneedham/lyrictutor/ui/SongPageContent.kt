@@ -59,7 +59,8 @@ import com.lukeneedham.lyrictutor.data.annotation.SongLanguages
 import com.lukeneedham.lyrictutor.data.lyrics.LyricLine
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSourceKind
-import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
+import com.lukeneedham.lyrictutor.data.track.PlayProvider
+import com.lukeneedham.lyrictutor.data.track.TrackLinks
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryResult
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionarySense
@@ -103,6 +104,7 @@ internal fun SongPageContent(
     onOpenSettings: () -> Unit,
     onWordClick: (SelectedWord) -> Unit,
     onWordDismiss: () -> Unit,
+    onPlayProviderChange: (PlayProvider) -> Unit = {},
 ) {
     // The page is painted with the colours of the song's cover, once they are read
     val appTheme = AppTheme.current
@@ -122,12 +124,13 @@ internal fun SongPageContent(
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > with(density) { HEADER_SCROLLED_AWAY_DP.dp.toPx() }
         }
     }
-    // Opens the song in the Spotify app, or in the browser when the app is not there: the app cannot play it by itself
-    fun playOnSpotify(trackId: String) {
+    // Opens the song in its own app (Spotify or YouTube), or in the browser when the app is not there: this app cannot play it by itself
+    fun play(track: TrackInfo, provider: PlayProvider) {
+        val url = TrackLinks.playUrl(track, provider)
         try {
-            uriHandler.openUri(SpotifyLinkParser.trackUrl(trackId))
+            uriHandler.openUri(url)
         } catch (e: Exception) {
-            Logger.e("Could not open the song in Spotify", e)
+            Logger.e("Could not open the song to play it", e)
         }
     }
     CompositionLocalProvider(LocalAppTheme provides theme) {
@@ -201,7 +204,9 @@ internal fun SongPageContent(
                                 languages = languages,
                                 showActions = state.isArtResolved,
                                 canTranslateAgain = state.annotationStatus == AnnotationStatus.Idle && state.annotations.isNotEmpty(),
-                                onPlay = { playOnSpotify(state.track.trackId) },
+                                playProvider = state.playProvider,
+                                onPlayProviderChange = onPlayProviderChange,
+                                onPlay = { play(state.track, state.playProvider) },
                                 onTranslateAgain = onTranslateAgain,
                             )
                         }
