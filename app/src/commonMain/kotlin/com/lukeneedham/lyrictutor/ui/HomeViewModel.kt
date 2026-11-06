@@ -2,6 +2,7 @@ package com.lukeneedham.lyrictutor.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lukeneedham.lyrictutor.data.cover.CoverFinder
 import com.lukeneedham.lyrictutor.data.song.SongCache
 import com.lukeneedham.lyrictutor.data.track.TrackIds
 import com.lukeneedham.lyrictutor.data.track.TrackSearcher
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class HomeViewModel(private val songCache: SongCache, private val trackSearcher: TrackSearcher) : ViewModel() {
+class HomeViewModel(private val songCache: SongCache, private val trackSearcher: TrackSearcher, private val coverFinder: CoverFinder) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -108,8 +109,11 @@ class HomeViewModel(private val songCache: SongCache, private val trackSearcher:
                     durationSeconds = null,
                     releaseDate = null,
                 )
-                // Saved again when it is there, so that it moves to the top of the recents
-                songCache.saveTrack(songCache.getTrack(track.trackId) ?: track)
+                // Saved again when it is there, so that it moves to the top of the recents; the cover is looked up only when it has none
+                val known = songCache.getTrack(track.trackId)?.takeIf { it.coverUrl != null }
+                songCache.saveTrack(
+                    known ?: track.copy(coverUrl = coverFinder.find(track.searchTitle, track.artists.first(), track.durationSeconds)),
+                )
                 _uiState.update { it.copy(songName = "", artistName = "") }
                 _events.trySend(HomeEvent.OpenSong(track.trackId))
             } finally {

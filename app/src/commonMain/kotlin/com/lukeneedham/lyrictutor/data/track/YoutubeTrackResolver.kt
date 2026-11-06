@@ -2,6 +2,7 @@ package com.lukeneedham.lyrictutor.data.track
 
 import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.apiJson
+import com.lukeneedham.lyrictutor.data.cover.CoverFinder
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -15,7 +16,7 @@ import kotlinx.serialization.Serializable
  * Reads a YouTube video through its public oEmbed answer (no key): the title and the channel name. The song and artist are guessed from
  * them by [YoutubeTitleParser], so the result can be wrong for a video that is not a plain music upload.
  */
-class YoutubeTrackResolver(private val client: HttpClient) : TrackResolver {
+class YoutubeTrackResolver(private val client: HttpClient, private val coverFinder: CoverFinder) : TrackResolver {
 
     override suspend fun resolve(trackId: String): Result<TrackInfo> {
         val videoId = trackId.removePrefix("yt:")
@@ -42,13 +43,16 @@ class YoutubeTrackResolver(private val client: HttpClient) : TrackResolver {
         }
         val (title, artist) = YoutubeTitleParser.parse(dto.title.orEmpty(), dto.authorName)
             ?: return Result.failure(TrackResolveException.Unreadable("The video has no title"))
+        val artistName = artist.ifBlank { dto.authorName.orEmpty() }.ifBlank { "YouTube" }
+        // The album art when it is found (the title and artist are guesses, so it has to match both); else the frame YouTube shows
+        val cover = coverFinder.find(TitleCleaner.clean(title), artistName, durationSeconds = null) ?: dto.thumbnailUrl
         return Result.success(
             TrackInfo(
                 trackId = trackId,
                 title = title,
                 searchTitle = TitleCleaner.clean(title),
-                artists = listOf(artist.ifBlank { dto.authorName.orEmpty() }.ifBlank { "YouTube" }),
-                coverUrl = dto.thumbnailUrl,
+                artists = listOf(artistName),
+                coverUrl = cover,
                 durationSeconds = null,
                 releaseDate = null,
             ),

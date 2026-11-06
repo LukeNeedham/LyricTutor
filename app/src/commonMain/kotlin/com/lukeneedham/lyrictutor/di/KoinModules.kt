@@ -7,6 +7,10 @@ import com.lukeneedham.lyrictutor.data.annotation.GeminiPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.annotation.LyricsAnnotator
 import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
+import com.lukeneedham.lyrictutor.data.cover.CoverFinder
+import com.lukeneedham.lyrictutor.data.cover.DeezerCoverFinder
+import com.lukeneedham.lyrictutor.data.cover.FallbackCoverFinder
+import com.lukeneedham.lyrictutor.data.cover.ItunesCoverFinder
 import com.lukeneedham.lyrictutor.data.lyrics.LrclibLyricsSource
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSource
@@ -26,7 +30,13 @@ import org.koin.dsl.module
 
 object KoinModules {
     private val app = module {
-        single<TrackResolver> { MultiSourceTrackResolver(spotify = SpotifyTrackResolver(client = get()), youtube = YoutubeTrackResolver(client = get())) }
+        single<CoverFinder> { FallbackCoverFinder(listOf(ItunesCoverFinder(client = get()), DeezerCoverFinder(client = get()))) }
+        single<TrackResolver> {
+            MultiSourceTrackResolver(
+                spotify = SpotifyTrackResolver(client = get()),
+                youtube = YoutubeTrackResolver(client = get(), coverFinder = get()),
+            )
+        }
 
         single { LrclibLyricsSource(client = get()) }
         single<LyricsSource> { get<LrclibLyricsSource>() }
@@ -39,7 +49,7 @@ object KoinModules {
         single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
         single { AnnotationRepository(songCache = get(), annotator = get()) }
 
-        viewModel { HomeViewModel(songCache = get(), trackSearcher = get()) }
+        viewModel { HomeViewModel(songCache = get(), trackSearcher = get(), coverFinder = get()) }
         viewModel { (trackId: String) -> SongViewModel(
                 trackId = trackId,
                 trackResolver = get(),
