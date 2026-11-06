@@ -170,7 +170,7 @@ class SongViewModel(
     }
 
     /**
-     * A Spotify song gets its YouTube link and a YouTube song its Spotify link, from Odesli, so that the play button goes straight to the
+     * A Spotify song gets its YouTube link and a YouTube song its Spotify link, from its song.link page, so that the play button goes straight to the
      * song on either service. Asked again at the next opening when nothing was found, and kept once found.
      */
     private fun loadOtherLinks(track: TrackInfo) {
