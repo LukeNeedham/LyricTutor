@@ -65,6 +65,7 @@ object KoinModules {
                 partOfSpeechChooser = get(),
                 artColorExtractor = get(),
                 playProviderStore = get(),
+                streamingLinkFinder = get(),
             ) }
         viewModel { SettingsViewModel(isDebugEnabled = DebugFlags.isEnabled, settingsStore = get(), modelCatalog = get()) }
     }
