@@ -3,10 +3,13 @@ package com.lukeneedham.lyrictutor.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -21,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +33,8 @@ import com.lukeneedham.lyrictutor.data.track.PlayProvider
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.provider_spotify
 import com.lukeneedham.lyrictutor.generated.resources.provider_youtube
+import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
+import com.lukeneedham.lyrictutor.generated.resources.song_play_on_youtube
 import com.lukeneedham.lyrictutor.ui.components.AppIcon
 import com.lukeneedham.lyrictutor.ui.components.AppIconImage
 import com.lukeneedham.lyrictutor.ui.components.AppText
@@ -35,32 +42,57 @@ import com.lukeneedham.lyrictutor.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/** The service the play button uses: the chosen one with a chevron, which opens the list of services below it. Choosing one closes the list. */
+/**
+ * One pill: a play icon that plays the song on the chosen service, joined to the name of that service with a chevron, which opens the list of
+ * services below the pill. Choosing one closes the list.
+ */
 @Composable
-internal fun PlayProviderDropdown(
+internal fun PlayControl(
     selected: PlayProvider,
+    onPlay: () -> Unit,
     onSelect: (PlayProvider) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val theme = AppTheme.current
     var expanded by remember { mutableStateOf(false) }
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    val playDescription = stringResource(
+        when (selected) {
+            PlayProvider.Spotify -> Res.string.song_play_on_spotify
+            PlayProvider.YouTube -> Res.string.song_play_on_youtube
+        },
+    )
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clip(RoundedCornerShape(percent = 50))
-                .clickable(role = Role.DropdownList) { expanded = !expanded }
-                .padding(horizontal = 14.dp),
+            modifier = Modifier.height(48.dp).clip(RoundedCornerShape(percent = 50)).background(theme.primary),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            AppText(text = label(selected), color = theme.onSurfaceVariant, size = 14.sp, weight = FontWeight.Medium)
-            AppIconImage(
-                icon = AppIcon.Chevron,
-                tint = theme.onSurfaceVariant,
-                iconSize = 18.dp,
-                modifier = Modifier.rotate(if (expanded) -90f else 90f),
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(64.dp)
+                    .semantics { contentDescription = playDescription }
+                    .clickable(role = Role.Button, onClick = onPlay),
+                contentAlignment = Alignment.Center,
+            ) {
+                AppIconImage(icon = AppIcon.Play, tint = theme.onPrimary, iconSize = 26.dp)
+            }
+            Box(modifier = Modifier.width(1.dp).height(24.dp).background(theme.onPrimary.copy(alpha = 0.35f)))
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .clickable(role = Role.DropdownList) { expanded = !expanded }
+                    .padding(start = 16.dp, end = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                AppText(text = label(selected), color = theme.onPrimary, size = 15.sp, weight = FontWeight.Medium)
+                AppIconImage(
+                    icon = AppIcon.Chevron,
+                    tint = theme.onPrimary,
+                    iconSize = 18.dp,
+                    modifier = Modifier.rotate(if (expanded) -90f else 90f),
+                )
+            }
         }
         if (expanded) {
             Column(modifier = Modifier.width(180.dp).clip(RoundedCornerShape(16.dp)).background(theme.surface)) {
@@ -100,6 +132,6 @@ private fun label(provider: PlayProvider) = when (provider) {
 @Composable
 private fun Preview() {
     AppTheme {
-        PlayProviderDropdown(selected = PlayProvider.YouTube, onSelect = {}, modifier = Modifier.padding(16.dp))
+        PlayControl(selected = PlayProvider.YouTube, onPlay = {}, onSelect = {}, modifier = Modifier.padding(16.dp))
     }
 }

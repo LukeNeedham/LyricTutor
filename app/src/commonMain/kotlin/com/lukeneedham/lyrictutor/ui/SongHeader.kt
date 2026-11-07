@@ -23,8 +23,6 @@ import com.lukeneedham.lyrictutor.data.track.PlayProvider
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
-import com.lukeneedham.lyrictutor.generated.resources.song_play_on_spotify
-import com.lukeneedham.lyrictutor.generated.resources.song_play_on_youtube
 import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
 import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
@@ -100,20 +98,8 @@ internal fun SongHeader(
                 horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // One play button, and under it the service it plays on: the same one on every song page
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    AppButton(
-                        text = stringResource(
-                            when (playProvider) {
-                                PlayProvider.Spotify -> Res.string.song_play_on_spotify
-                                PlayProvider.YouTube -> Res.string.song_play_on_youtube
-                            },
-                        ),
-                        onClick = onPlay,
-                        icon = AppIcon.Play,
-                    )
-                    PlayProviderDropdown(selected = playProvider, onSelect = onPlayProviderChange)
-                }
+                // One pill: play, and the service it plays on, which is the same on every song page
+                PlayControl(selected = playProvider, onPlay = onPlay, onSelect = onPlayProviderChange)
                 if (canTranslateAgain) {
                     AppButton(
                         text = stringResource(Res.string.song_translate_again),
@@ -125,7 +111,7 @@ internal fun SongHeader(
             }
         } else {
             // The room the buttons will take, so that the lyrics do not jump down when they come
-            Spacer(modifier = Modifier.padding(top = 14.dp).height(96.dp))
+            Spacer(modifier = Modifier.padding(top = 14.dp).height(48.dp))
         }
     }
 }
