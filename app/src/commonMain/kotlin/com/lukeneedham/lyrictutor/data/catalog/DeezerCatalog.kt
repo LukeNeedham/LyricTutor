@@ -11,10 +11,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** The Deezer API (public, no key): album art, and the song's page on Deezer. */
+/** Album art from the Deezer API (public, no key). */
 class DeezerCatalog(private val client: HttpClient) : SongCatalog {
 
-    override suspend fun find(title: String, artist: String, durationSeconds: Int?): CatalogMatch? = try {
+    override suspend fun find(title: String, artist: String, durationSeconds: Int?): String? = try {
         val response = client.get("https://api.deezer.com/search") {
             parameter("q", "$title $artist")
             parameter("limit", 10)
@@ -25,7 +25,7 @@ class DeezerCatalog(private val client: HttpClient) : SongCatalog {
         } else {
             apiJson.decodeFromString<DeezerAnswer>(response.bodyAsText()).data
                 .firstOrNull { SongMatcher.isMatch(title, artist, durationSeconds, it.title, it.artist?.name, it.duration) }
-                ?.let { CatalogMatch(coverUrl = it.album?.coverXl?.takeIf { cover -> cover.isNotBlank() }, pageUrl = it.link) }
+                ?.album?.coverXl?.takeIf { it.isNotBlank() }
         }
     } catch (e: CancellationException) {
         throw e
@@ -40,7 +40,6 @@ class DeezerCatalog(private val client: HttpClient) : SongCatalog {
     @Serializable
     private class DeezerTrack(
         val title: String? = null,
-        val link: String? = null,
         val duration: Int? = null,
         val artist: DeezerArtist? = null,
         val album: DeezerAlbum? = null,

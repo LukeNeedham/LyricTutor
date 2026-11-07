@@ -9,13 +9,9 @@ import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.lyrics.Lyrics
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.song.SongCache
-import com.lukeneedham.lyrictutor.data.catalog.StreamingLinkFinder
 import com.lukeneedham.lyrictutor.data.settings.PlayProviderStore
 import com.lukeneedham.lyrictutor.data.track.PlayProvider
-import com.lukeneedham.lyrictutor.data.track.SpotifyLinkParser
-import com.lukeneedham.lyrictutor.data.track.TrackIds
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
-import com.lukeneedham.lyrictutor.data.track.YoutubeLinkParser
 import com.lukeneedham.lyrictutor.data.track.TrackResolveException
 import com.lukeneedham.lyrictutor.data.track.TrackResolver
 import com.lukeneedham.lyrictutor.data.wiktionary.WiktionaryLookup
@@ -38,7 +34,6 @@ class SongViewModel(
     private val partOfSpeechChooser: PartOfSpeechChooser,
     private val artColorExtractor: ArtColorExtractor,
     private val playProviderStore: PlayProviderStore,
-    private val streamingLinkFinder: StreamingLinkFinder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
@@ -165,29 +160,6 @@ class SongViewModel(
             _uiState.value = SongUiState.Loaded(track = track, lyrics = LyricsUiState.Loading, playProvider = playProvider)
             loadLyrics(track)
             loadArtColors(track)
-            loadOtherLinks(track)
-        }
-    }
-
-    /**
-     * A Spotify song gets its YouTube link and a YouTube song its Spotify link, from its song.link page, so that the play button goes straight to the
-     * song on either service. Asked again at the next opening when nothing was found, and kept once found.
-     */
-    private fun loadOtherLinks(track: TrackInfo) {
-        val sourceUrl = when {
-            TrackIds.isSpotify(track.trackId) && track.youtubeUrl == null -> SpotifyLinkParser.trackUrl(track.trackId)
-            TrackIds.isYoutube(track.trackId) && track.spotifyUrl == null -> YoutubeLinkParser.videoUrl(track.trackId.removePrefix("yt:"))
-            else -> return
-        }
-        viewModelScope.launch {
-            val links = streamingLinkFinder.find(sourceUrl) ?: return@launch
-            val updated = track.copy(
-                spotifyUrl = track.spotifyUrl ?: links.spotifyUrl.takeIf { TrackIds.isYoutube(track.trackId) },
-                youtubeUrl = track.youtubeUrl ?: links.youtubeUrl.takeIf { TrackIds.isSpotify(track.trackId) },
-            )
-            if (updated == track) return@launch
-            songCache.saveTrack(updated)
-            updateLoaded { it.copy(track = updated) }
         }
     }
 

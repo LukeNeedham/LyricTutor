@@ -10,10 +10,10 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 
-/** The iTunes Search API (public, no key): album art, and the song's page in Apple Music. */
+/** Album art from the iTunes Search API (public, no key). */
 class ItunesCatalog(private val client: HttpClient) : SongCatalog {
 
-    override suspend fun find(title: String, artist: String, durationSeconds: Int?): CatalogMatch? = try {
+    override suspend fun find(title: String, artist: String, durationSeconds: Int?): String? = try {
         val response = client.get("https://itunes.apple.com/search") {
             parameter("term", "$title $artist")
             parameter("entity", "song")
@@ -27,7 +27,7 @@ class ItunesCatalog(private val client: HttpClient) : SongCatalog {
                 .firstOrNull {
                     SongMatcher.isMatch(title, artist, durationSeconds, it.trackName, it.artistName, it.trackTimeMillis?.div(1000)?.toInt())
                 }
-                ?.let { CatalogMatch(coverUrl = it.artworkUrl100?.let(::larger), pageUrl = it.trackViewUrl) }
+                ?.artworkUrl100?.let(::larger)
         }
     } catch (e: CancellationException) {
         throw e
@@ -45,7 +45,6 @@ class ItunesCatalog(private val client: HttpClient) : SongCatalog {
         val artistName: String? = null,
         val trackTimeMillis: Long? = null,
         val artworkUrl100: String? = null,
-        val trackViewUrl: String? = null,
     )
 
     companion object {

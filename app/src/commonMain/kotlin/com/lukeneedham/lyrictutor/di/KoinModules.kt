@@ -7,10 +7,7 @@ import com.lukeneedham.lyrictutor.data.annotation.GeminiPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.annotation.LyricsAnnotator
 import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
-import com.lukeneedham.lyrictutor.data.catalog.SongLinkPageFinder
 import com.lukeneedham.lyrictutor.data.catalog.SongCatalog
-import com.lukeneedham.lyrictutor.data.catalog.StreamingLinkFinder
-import com.lukeneedham.lyrictutor.data.catalog.TrackExtrasFinder
 import com.lukeneedham.lyrictutor.data.catalog.DeezerCatalog
 import com.lukeneedham.lyrictutor.data.catalog.FallbackCatalog
 import com.lukeneedham.lyrictutor.data.catalog.ItunesCatalog
@@ -34,12 +31,10 @@ import org.koin.dsl.module
 object KoinModules {
     private val app = module {
         single<SongCatalog> { FallbackCatalog(listOf(ItunesCatalog(client = get()), DeezerCatalog(client = get()))) }
-        single<StreamingLinkFinder> { SongLinkPageFinder(client = get()) }
-        single { TrackExtrasFinder(catalog = get(), linkFinder = get()) }
         single<TrackResolver> {
             MultiSourceTrackResolver(
                 spotify = SpotifyTrackResolver(client = get()),
-                youtube = YoutubeTrackResolver(client = get(), extrasFinder = get()),
+                youtube = YoutubeTrackResolver(client = get(), catalog = get()),
             )
         }
 
@@ -54,7 +49,7 @@ object KoinModules {
         single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
         single { AnnotationRepository(songCache = get(), annotator = get()) }
 
-        viewModel { HomeViewModel(songCache = get(), trackSearcher = get(), extrasFinder = get()) }
+        viewModel { HomeViewModel(songCache = get(), trackSearcher = get(), catalog = get()) }
         viewModel { (trackId: String) -> SongViewModel(
                 trackId = trackId,
                 trackResolver = get(),
@@ -65,7 +60,6 @@ object KoinModules {
                 partOfSpeechChooser = get(),
                 artColorExtractor = get(),
                 playProviderStore = get(),
-                streamingLinkFinder = get(),
             ) }
         viewModel { SettingsViewModel(isDebugEnabled = DebugFlags.isEnabled, settingsStore = get(), modelCatalog = get()) }
     }
