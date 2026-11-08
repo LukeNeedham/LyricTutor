@@ -125,12 +125,11 @@ internal fun SongPageContent(
         }
     }
     // Opens the song in its own app (Spotify or YouTube), or in the browser when the app is not there: this app cannot play it by itself
-    fun play(track: TrackInfo, provider: PlayProvider) {
-        val url = TrackLinks.playUrl(track, provider)
+    fun open(url: String) {
         try {
             uriHandler.openUri(url)
         } catch (e: Exception) {
-            Logger.e("Could not open the song to play it", e)
+            Logger.e("Could not open $url", e)
         }
     }
     CompositionLocalProvider(LocalAppTheme provides theme) {
@@ -206,7 +205,8 @@ internal fun SongPageContent(
                                 canTranslateAgain = state.annotationStatus == AnnotationStatus.Idle && state.annotations.isNotEmpty(),
                                 playProvider = state.playProvider,
                                 onPlayProviderChange = onPlayProviderChange,
-                                onPlay = { play(state.track, state.playProvider) },
+                                onPlay = { open(TrackLinks.playUrl(state.track, state.playProvider)) },
+                                onOpenGenius = { open(TrackLinks.geniusUrl(state.track)) },
                                 onTranslateAgain = onTranslateAgain,
                             )
                         }

@@ -38,6 +38,7 @@
     <string name="song_play_on_youtube">Play on YouTube</string>
     <string name="provider_spotify">Spotify</string>
     <string name="provider_youtube">YouTube</string>
+    <string name="song_open_genius">Genius</string>
     <string name="song_translate_again">Translate again</string>
 
     <!-- Lyrics -->

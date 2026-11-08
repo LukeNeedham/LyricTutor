@@ -23,6 +23,7 @@ import com.lukeneedham.lyrictutor.data.track.PlayProvider
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
+import com.lukeneedham.lyrictutor.generated.resources.song_open_genius
 import com.lukeneedham.lyrictutor.generated.resources.song_translate_again
 import com.lukeneedham.lyrictutor.ui.components.AppButton
 import com.lukeneedham.lyrictutor.ui.components.AppButtonStyle
@@ -47,6 +48,7 @@ internal fun SongHeader(
     playProvider: PlayProvider,
     onPlay: () -> Unit,
     onPlayProviderChange: (PlayProvider) -> Unit,
+    onOpenGenius: () -> Unit,
     onTranslateAgain: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,6 +102,12 @@ internal fun SongHeader(
             ) {
                 // One pill: play, and the service it plays on, which is the same on every song page
                 PlayControl(selected = playProvider, onPlay = onPlay, onSelect = onPlayProviderChange)
+                AppButton(
+                    text = stringResource(Res.string.song_open_genius),
+                    onClick = onOpenGenius,
+                    style = AppButtonStyle.Tonal,
+                    icon = AppIcon.External,
+                )
                 if (canTranslateAgain) {
                     AppButton(
                         text = stringResource(Res.string.song_translate_again),
@@ -136,6 +144,7 @@ private fun Preview() {
             playProvider = PlayProvider.Spotify,
             onPlay = {},
             onPlayProviderChange = {},
+            onOpenGenius = {},
             onTranslateAgain = {},
             modifier = Modifier.padding(16.dp),
         )
