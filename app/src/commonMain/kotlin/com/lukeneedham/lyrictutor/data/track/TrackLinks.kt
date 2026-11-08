@@ -18,5 +18,8 @@ object TrackLinks {
             ?: "https://www.youtube.com/results?search_query=${searchText(track).encodeURLParameter()}"
     }
 
+    /** A search for the song on Genius.com, where its lyrics and notes are. Genius has no link by song id without its (keyed) API. */
+    fun geniusUrl(track: TrackInfo): String = "https://genius.com/search?q=${searchText(track).encodeURLParameter()}"
+
     private fun searchText(track: TrackInfo) = "${track.searchTitle} ${track.artists.first()}"
 }

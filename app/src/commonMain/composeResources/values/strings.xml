@@ -15,6 +15,7 @@
     <string name="home_song_hint">Song name</string>
     <string name="home_artist_hint">Artist</string>
     <string name="home_missing_name">Enter both the song name and the artist.</string>
+    <string name="home_paste">Paste</string>
     <string name="home_open_song">Open song</string>
     <string name="home_invalid_link">That is not a Spotify or YouTube song link. Use Share, then Copy link, in the app.</string>
     <string name="home_languages_title">Languages</string>
@@ -37,6 +38,7 @@
     <string name="song_play_on_youtube">Play on YouTube</string>
     <string name="provider_spotify">Spotify</string>
     <string name="provider_youtube">YouTube</string>
+    <string name="song_open_genius">Genius</string>
     <string name="song_translate_again">Translate again</string>
 
     <!-- Lyrics -->

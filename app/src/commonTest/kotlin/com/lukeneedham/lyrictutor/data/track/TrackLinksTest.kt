@@ -43,4 +43,9 @@ class TrackLinksTest {
         // A Spotify song has no YouTube link of its own
         assertEquals("https://www.youtube.com/results?search_query=Si%20Me%20Voy%20Cuco", TrackLinks.playUrl(track(spotifyId), PlayProvider.YouTube))
     }
+
+    @Test
+    fun geniusIsASearchForTheSongAndItsFirstArtist() {
+        assertEquals("https://genius.com/search?q=Si%20Me%20Voy%20Cuco", TrackLinks.geniusUrl(track(spotifyId)))
+    }
 }
