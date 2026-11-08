@@ -25,18 +25,18 @@ class GeminiPartOfSpeechChooser(
 
     override suspend fun choose(line: String, word: String, language: String?, options: List<String>): Result<String?> {
         val settings = settingsStore.load()
-        if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
+        if (settings.geminiApiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
         val text = try {
-            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent") {
-                header("x-goog-api-key", settings.apiKey)
+            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent") {
+                header("x-goog-api-key", settings.geminiApiKey)
                 contentType(ContentType.Application.Json)
                 timeout {
                     requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                     socketTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                 }
-                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.choiceRequestBody(line, word, language, options, settings.model)))
+                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.choiceRequestBody(line, word, language, options, settings.geminiModel)))
             }
             val body = response.bodyAsText()
             if (!response.status.isSuccess()) {
@@ -49,7 +49,7 @@ class GeminiPartOfSpeechChooser(
                     },
                 )
             }
-            Logger.i("${settings.model} chose a part of speech in ${mark.elapsedNow()}, tokens: ${GeminiProtocol.parseUsage(body) ?: "not reported"}")
+            Logger.i("${settings.geminiModel} chose a part of speech in ${mark.elapsedNow()}, tokens: ${GeminiProtocol.parseUsage(body) ?: "not reported"}")
             body
         } catch (e: CancellationException) {
             throw e

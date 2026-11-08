@@ -72,6 +72,9 @@ Room (`AppDatabase`, version 2, `MIGRATION_1_2` added the annotation table): `so
 if it cannot be decrypted it reads as empty and the user enters it again. Release builds are minified: `proguard-rules.pro` keeps the
 serialization and Room rules (**never tried in a release build**).
 
+### DeepSeek requests (`DeepSeekProtocol`, `DeepSeekAnnotator`, `DeepSeekPartOfSpeechChooser`, `DeepSeekModelCatalog`)
+`POST https://api.deepseek.com/chat/completions` (OpenAI format, `Authorization: Bearer <key>`). JSON mode only (`response_format: json_object`, no schema): the shape is in a system message, and the same prompt and parser as Gemini's are shared (`GeminiProtocol.prompt`, `parseLines`, `matchChoice`). `thinking: disabled`, `max_tokens` 8,192 (translations) / 32 (the part-of-speech question, a plain prompt matched against the options). Models from `GET /models`. 401 = bad key, 429 = rate limit, 402 (no balance) shows as a failure with DeepSeek's message. Tokens are logged like Gemini's. `ProviderAnnotator` and `ProviderPartOfSpeechChooser` pick the provider from the settings on each request; `providerName` of the stored translations follows the latest request. Saved translations are kept when the provider changes (use Translate again to redo a song).
+
 ### Gemini requests (`GeminiProtocol`, `GeminiAnnotator`, `GeminiPartOfSpeechChooser`, `GeminiModelCatalog`)
 REST `generateContent` with the user's key (`x-goog-api-key`). JSON response schema for translations; enum for the part of speech; safety
 settings `BLOCK_NONE` (lyrics can be crude). **No temperature** (Gemini 3 looped on low values). Thinking: translations `low`, the part
@@ -86,7 +89,7 @@ the page.
 |---|---|
 | Input | A Spotify link. No Spotify account access yet (`TrackSource` interface later) |
 | Lyrics | LRCLIB, with a paste fallback. Personal app: lyrics are fetched on demand, never bundled or put in tests, previews or docs (use made-up placeholder lines) |
-| AI | Gemini only, the user's own key, encrypted. **A Claude provider was considered and dropped** (a Claude subscription does not cover the API anyway) |
+| AI | **Gemini or DeepSeek**, chosen in Settings (`AiProvider`), each with the user's own key (encrypted) and model. DeepSeek was added to try for a lower price (unmeasured; its model id `deepseek-v4-flash` and the `thinking: disabled` field are from memory and **untested against the live API**: use the model picker if the id is refused). **A Claude provider was considered and dropped** (a Claude subscription does not cover the API anyway) |
 | What the AI does | Translate each line and name its language. **Everything about a single word comes from Wiktionary** (free), to keep tokens low |
 | Cognates, AI etymology | Dropped. The credit link to the Wiktionary page replaces "where it comes from" |
 | Meaning of a word | The word's Wiktionary senses, filtered to the part of speech it is used as. Not "meaning in this line" (possible later, on demand) |

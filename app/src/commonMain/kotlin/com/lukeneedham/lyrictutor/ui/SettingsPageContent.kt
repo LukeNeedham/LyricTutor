@@ -34,16 +34,23 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukeneedham.common.ui.DebugButton
+import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.settings_about_title
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_intro
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_title
-import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_label
-import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note
 import com.lukeneedham.lyrictutor.generated.resources.settings_attribution
+import com.lukeneedham.lyrictutor.generated.resources.settings_deepseek_api_key_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_deepseek_api_key_note
+import com.lukeneedham.lyrictutor.generated.resources.settings_deepseek_model_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_gemini_api_key_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_gemini_api_key_note
+import com.lukeneedham.lyrictutor.generated.resources.settings_gemini_model_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_provider_deepseek
+import com.lukeneedham.lyrictutor.generated.resources.settings_provider_gemini
+import com.lukeneedham.lyrictutor.generated.resources.settings_provider_label
 import com.lukeneedham.lyrictutor.generated.resources.settings_key_hide
 import com.lukeneedham.lyrictutor.generated.resources.settings_key_show
-import com.lukeneedham.lyrictutor.generated.resources.settings_model_label
 import com.lukeneedham.lyrictutor.generated.resources.settings_models_failed
 import com.lukeneedham.lyrictutor.generated.resources.settings_models_invalid_key
 import com.lukeneedham.lyrictutor.generated.resources.settings_models_loading
@@ -73,6 +80,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 internal fun SettingsPageContent(
     state: SettingsUiState,
     onBack: () -> Unit,
+    onProviderChange: (AiProvider) -> Unit,
     onApiKeyChange: (String) -> Unit,
     onModelChange: (String) -> Unit,
     onShowModels: () -> Unit,
@@ -96,7 +104,24 @@ internal fun SettingsPageContent(
         ) {
             Card(title = stringResource(Res.string.settings_ai_title)) {
                 AppText(text = stringResource(Res.string.settings_ai_intro), color = theme.onSurfaceVariant, size = 14.sp)
-                Field(label = stringResource(Res.string.settings_api_key_label)) {
+                Field(label = stringResource(Res.string.settings_provider_label)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (provider in AiProvider.entries) {
+                            val isSelected = provider == state.provider
+                            AppButton(
+                                text = stringResource(
+                                    if (provider == AiProvider.DeepSeek) Res.string.settings_provider_deepseek else Res.string.settings_provider_gemini,
+                                ),
+                                onClick = { onProviderChange(provider) },
+                                style = if (isSelected) AppButtonStyle.Primary else AppButtonStyle.Tonal,
+                                icon = if (isSelected) AppIcon.Check else null,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+                val isDeepSeek = state.provider == AiProvider.DeepSeek
+                Field(label = stringResource(if (isDeepSeek) Res.string.settings_deepseek_api_key_label else Res.string.settings_gemini_api_key_label)) {
                     AppTextField(
                         value = state.apiKey,
                         onValueChange = onApiKeyChange,
@@ -111,9 +136,13 @@ internal fun SettingsPageContent(
                             )
                         },
                     )
-                    AppText(text = stringResource(Res.string.settings_api_key_note), color = theme.onSurfaceVariant, size = 13.sp)
+                    AppText(
+                        text = stringResource(if (isDeepSeek) Res.string.settings_deepseek_api_key_note else Res.string.settings_gemini_api_key_note),
+                        color = theme.onSurfaceVariant,
+                        size = 13.sp,
+                    )
                 }
-                Field(label = stringResource(Res.string.settings_model_label)) {
+                Field(label = stringResource(if (isDeepSeek) Res.string.settings_deepseek_model_label else Res.string.settings_gemini_model_label)) {
                     AppTextField(value = state.model, onValueChange = onModelChange)
                     ModelButton(state = state.models, onShow = onShowModels)
                 }
@@ -246,8 +275,9 @@ private fun ModelSheet(models: List<String>, selected: String, onPick: (String) 
 private fun Preview() {
     AppTheme {
         SettingsPageContent(
-            state = SettingsUiState(isDebugEnabled = true, apiKey = "AIzaSyExampleKey", model = "gemini-3.8-flash"),
+            state = SettingsUiState(isDebugEnabled = true, geminiApiKey = "AIzaSyExampleKey", geminiModel = "gemini-3.8-flash"),
             onBack = {},
+            onProviderChange = {},
             onApiKeyChange = {},
             onModelChange = {},
             onShowModels = {},
@@ -266,12 +296,14 @@ private fun PreviewModels() {
         SettingsPageContent(
             state = SettingsUiState(
                 isDebugEnabled = false,
-                apiKey = "AIzaSyExampleKey",
-                model = "gemini-3.8-flash",
+                provider = AiProvider.DeepSeek,
+                deepSeekApiKey = "sk-example-key",
+                deepSeekModel = "deepseek-v4-flash",
                 isSaved = true,
-                models = ModelListUiState.Loaded(listOf("gemini-3.8-flash", "gemini-3.8-pro")),
+                models = ModelListUiState.Loaded(listOf("deepseek-v4-flash", "deepseek-v4-pro")),
             ),
             onBack = {},
+            onProviderChange = {},
             onApiKeyChange = {},
             onModelChange = {},
             onShowModels = {},

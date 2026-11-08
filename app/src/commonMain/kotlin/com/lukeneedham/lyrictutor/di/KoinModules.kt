@@ -1,16 +1,21 @@
 package com.lukeneedham.lyrictutor.di
 
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
+import com.lukeneedham.lyrictutor.data.annotation.DeepSeekAnnotator
+import com.lukeneedham.lyrictutor.data.annotation.DeepSeekModelCatalog
+import com.lukeneedham.lyrictutor.data.annotation.DeepSeekPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.annotation.GeminiAnnotator
 import com.lukeneedham.lyrictutor.data.annotation.GeminiModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.GeminiPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.annotation.LyricsAnnotator
-import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
+import com.lukeneedham.lyrictutor.data.annotation.ProviderAnnotator
+import com.lukeneedham.lyrictutor.data.annotation.ProviderPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.catalog.SongCatalog
 import com.lukeneedham.lyrictutor.data.catalog.DeezerCatalog
 import com.lukeneedham.lyrictutor.data.catalog.FallbackCatalog
 import com.lukeneedham.lyrictutor.data.catalog.ItunesCatalog
+import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.lyrics.LrclibLyricsSource
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsRepository
 import com.lukeneedham.lyrictutor.data.lyrics.LyricsSource
@@ -44,9 +49,24 @@ object KoinModules {
         single { LyricsRepository(songCache = get(), source = get()) }
 
         single<WiktionaryLookup> { WiktionaryClient(client = get(), pageCache = get()) }
-        single<ModelCatalog> { GeminiModelCatalog(client = get()) }
-        single<PartOfSpeechChooser> { GeminiPartOfSpeechChooser(client = get(), settingsStore = get()) }
-        single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
+        single<PartOfSpeechChooser> {
+            ProviderPartOfSpeechChooser(
+                settingsStore = get(),
+                choosers = mapOf(
+                    AiProvider.Gemini to GeminiPartOfSpeechChooser(client = get(), settingsStore = get()),
+                    AiProvider.DeepSeek to DeepSeekPartOfSpeechChooser(client = get(), settingsStore = get()),
+                ),
+            )
+        }
+        single<LyricsAnnotator> {
+            ProviderAnnotator(
+                settingsStore = get(),
+                annotators = mapOf(
+                    AiProvider.Gemini to GeminiAnnotator(client = get(), settingsStore = get()),
+                    AiProvider.DeepSeek to DeepSeekAnnotator(client = get(), settingsStore = get()),
+                ),
+            )
+        }
         single { AnnotationRepository(songCache = get(), annotator = get()) }
 
         viewModel { HomeViewModel(songCache = get(), trackSearcher = get(), catalog = get()) }
@@ -61,7 +81,16 @@ object KoinModules {
                 artColorExtractor = get(),
                 playProviderStore = get(),
             ) }
-        viewModel { SettingsViewModel(isDebugEnabled = DebugFlags.isEnabled, settingsStore = get(), modelCatalog = get()) }
+        viewModel {
+            SettingsViewModel(
+                isDebugEnabled = DebugFlags.isEnabled,
+                settingsStore = get(),
+                modelCatalogs = mapOf(
+                    AiProvider.Gemini to GeminiModelCatalog(client = get()),
+                    AiProvider.DeepSeek to DeepSeekModelCatalog(client = get()),
+                ),
+            )
+        }
     }
 
     val modules: List<Module> = listOf(app)

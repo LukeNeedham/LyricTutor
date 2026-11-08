@@ -34,25 +34,25 @@ class GeminiAnnotator(
 
     override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
         val settings = settingsStore.load()
-        if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
+        if (settings.geminiApiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
-        Logger.i("Asking ${settings.model} for lines ${lines.first().index}-${lines.last().index} of ${song.title}")
+        Logger.i("Asking ${settings.geminiModel} for lines ${lines.first().index}-${lines.last().index} of ${song.title}")
         val body = try {
-            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent") {
-                header("x-goog-api-key", settings.apiKey)
+            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent") {
+                header("x-goog-api-key", settings.geminiApiKey)
                 contentType(ContentType.Application.Json)
                 timeout {
                     requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                     // The wait for the first byte of the answer: the default of the OkHttp engine is ten seconds, too short for a batch
                     socketTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                 }
-                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.requestBody(song, lines, settings.model)))
+                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.requestBody(song, lines, settings.geminiModel)))
             }
             val text = response.bodyAsText()
             if (!response.status.isSuccess()) {
                 val reason = GeminiProtocol.errorMessage(text)
-                Logger.e("Gemini answered ${response.status} for model ${settings.model}: ${text.take(500)}")
+                Logger.e("Gemini answered ${response.status} for model ${settings.geminiModel}: ${text.take(500)}")
                 return Result.failure(
                     when {
                         response.status == HttpStatusCode.TooManyRequests -> AnnotationException.RateLimited(isDaily = GeminiProtocol.isDailyQuota(text))
@@ -66,7 +66,7 @@ class GeminiAnnotator(
             val usage = GeminiProtocol.parseUsage(text)
             val songTotal = usage?.let { totals.merge(song.trackId, it) }
             Logger.i(
-                "${settings.model} answered in ${mark.elapsedNow()}, tokens: ${usage ?: "not reported"}" +
+                "${settings.geminiModel} answered in ${mark.elapsedNow()}, tokens: ${usage ?: "not reported"}" +
                     (songTotal?.let { "; ${song.title} so far: $it" } ?: ""),
             )
             text
