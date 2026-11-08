@@ -14,7 +14,7 @@ what was learned, and the work that remains.
 
 ## 1. What the app is, and its state
 
-The user gives the app a song: a Spotify or YouTube link (typed, or shared from the Share sheet), or a song name and artist typed on Home (`LookupMode`). The app reads the song's details, finds its
+The user gives the app a song: a Spotify or YouTube link (pasted with the **Paste** button in the link box, which reads the clipboard and looks the song up in one tap; or typed; or shared from the Share sheet), or a song name and artist typed on Home (`LookupMode`). The app reads the song's details, finds its
 lyrics, shows them line by line with an English translation, and lets the user tap any word to see what Wiktionary says about it. It is a
 personal app, built for learning from songs. **First languages: Spanish and Dutch**, with no language-specific code (generic).
 

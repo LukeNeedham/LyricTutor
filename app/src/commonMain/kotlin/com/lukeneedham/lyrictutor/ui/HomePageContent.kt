@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -54,6 +55,7 @@ import com.lukeneedham.lyrictutor.generated.resources.home_mode_link
 import com.lukeneedham.lyrictutor.generated.resources.home_mode_name
 import com.lukeneedham.lyrictutor.generated.resources.home_song_hint
 import com.lukeneedham.lyrictutor.generated.resources.home_open_song
+import com.lukeneedham.lyrictutor.generated.resources.home_paste
 import com.lukeneedham.lyrictutor.generated.resources.home_recents_title
 import com.lukeneedham.lyrictutor.generated.resources.home_title
 import com.lukeneedham.lyrictutor.generated.resources.song_cover_description
@@ -90,6 +92,7 @@ internal fun HomePageContent(
     onSongNameChange: (String) -> Unit = {},
     onArtistNameChange: (String) -> Unit = {},
     onRemoveSong: (trackId: String) -> Unit = {},
+    onPaste: (clipboardText: String) -> Unit = {},
 ) {
     val theme = AppTheme.current
     Column(modifier = Modifier.fillMaxSize().background(theme.background).sideInsetsPadding()) {
@@ -106,6 +109,7 @@ internal fun HomePageContent(
                     onArtistNameChange = onArtistNameChange,
                     onModeChange = onModeChange,
                     onSubmit = onSubmit,
+                    onPaste = onPaste,
                 )
             }
             if (state.recents.isEmpty()) {
@@ -159,8 +163,10 @@ private fun Hero(
     onArtistNameChange: (String) -> Unit,
     onModeChange: (LookupMode) -> Unit,
     onSubmit: () -> Unit,
+    onPaste: (String) -> Unit,
 ) {
     val theme = AppTheme.current
+    val clipboard = LocalClipboardManager.current
     val submitButton: @Composable () -> Unit = {
         if (state.isSearching) Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) { Spinner() } else AppIconButton(
             icon = AppIcon.Arrow,
@@ -211,7 +217,17 @@ private fun Hero(
                     isError = state.showInvalidLink,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = { onSubmit() }),
-                    trailing = submitButton,
+                    // Links are pasted, not typed: with an empty box, one tap pastes the clipboard and looks the song up
+                    trailing = if (state.input.isBlank() && !state.isSearching) {
+                        {
+                            AppButton(
+                                text = stringResource(Res.string.home_paste),
+                                onClick = { onPaste(clipboard.getText()?.text.orEmpty()) },
+                            )
+                        }
+                    } else {
+                        submitButton
+                    },
                 )
                 if (state.showInvalidLink) HeroError(stringResource(Res.string.home_invalid_link))
             }

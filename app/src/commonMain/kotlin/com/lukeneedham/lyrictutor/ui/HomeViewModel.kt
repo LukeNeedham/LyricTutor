@@ -49,6 +49,12 @@ class HomeViewModel(private val songCache: SongCache, private val trackSearcher:
         _uiState.update { it.copy(input = input, showInvalidLink = false) }
     }
 
+    /** The Paste button: [clipboardText] goes in the link box and is looked up at once. An empty clipboard does nothing but show the error. */
+    fun onPaste(clipboardText: String) {
+        _uiState.update { it.copy(input = clipboardText.trim()) }
+        submitLink()
+    }
+
     /** Narrows the songs to [language]; the same language again shows them all. */
     fun onLanguageClick(language: String) {
         _uiState.update { it.copy(selectedLanguage = if (it.selectedLanguage == language) null else language) }
