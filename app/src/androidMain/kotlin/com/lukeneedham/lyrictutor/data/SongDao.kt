@@ -23,6 +23,9 @@ interface SongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSong(song: SongEntity)
 
+    @Query("DELETE FROM song WHERE trackId = :trackId")
+    suspend fun deleteSong(trackId: String)
+
     @Query("SELECT * FROM lyrics WHERE trackId = :trackId")
     suspend fun getLyrics(trackId: String): LyricsEntity?
 

@@ -20,6 +20,9 @@ interface SongCache {
     /** Saves [track] and marks it as opened now. */
     suspend fun saveTrack(track: TrackInfo)
 
+    /** Forgets the song, so that it is no longer one of the [recents]. Its lyrics and translations are kept. */
+    suspend fun deleteTrack(trackId: String)
+
     suspend fun getLyrics(trackId: String): Lyrics?
 
     suspend fun saveLyrics(trackId: String, lyrics: Lyrics)

@@ -44,9 +44,13 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
                 durationSeconds = track.durationSeconds,
                 releaseDate = track.releaseDate,
                 lastOpened = System.currentTimeMillis(),
+                spotifyUrl = track.spotifyUrl,
+                youtubeUrl = track.youtubeUrl,
             ),
         )
     }
+
+    override suspend fun deleteTrack(trackId: String) = dao.deleteSong(trackId)
 
     override suspend fun getLyrics(trackId: String): Lyrics? =
         dao.getLyrics(trackId)?.let { json.decodeFromString(Lyrics.serializer(), it.json) }
@@ -83,5 +87,7 @@ class RoomSongCache(private val dao: SongDao) : SongCache {
         coverUrl = coverUrl,
         durationSeconds = durationSeconds,
         releaseDate = releaseDate,
+        spotifyUrl = spotifyUrl,
+        youtubeUrl = youtubeUrl,
     )
 }
