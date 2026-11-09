@@ -1,10 +1,12 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
 import com.lukeneedham.lyrictutor.data.apiJson
+import com.lukeneedham.lyrictutor.data.settings.ChatReasoning
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -20,30 +22,48 @@ object ChatCompletionsProtocol {
     private const val MAX_OUTPUT_TOKENS = 8_192
     private const val CHOICE_MAX_OUTPUT_TOKENS = 32
 
+    // A model that cannot stop thinking spends tokens of the cap on it: leave room
+    private const val THINKING_MAX_OUTPUT_TOKENS = 16_384
+    private const val THINKING_CHOICE_MAX_OUTPUT_TOKENS = 1_024
+
     private val json = apiJson
 
     private const val FORMAT = """Answer with a single JSON object and nothing else, in this shape:
 {"lines":[{"index":0,"translation":"...","language":"Spanish","otherLanguages":[{"word":"hey","language":"English"}]}]}"""
 
-    fun requestBody(song: TrackInfo, lines: List<AnnotationLine>, model: String): JsonObject = buildJsonObject {
+    fun requestBody(song: TrackInfo, lines: List<AnnotationLine>, model: String, reasoning: ChatReasoning = ChatReasoning.Off): JsonObject = buildJsonObject {
         put("model", model)
         putJsonArray("messages") {
             addJsonObject { put("role", "system"); put("content", FORMAT) }
             addJsonObject { put("role", "user"); put("content", GeminiProtocol.prompt(song, lines)) }
         }
         putJsonObject("response_format") { put("type", "json_object") }
-        put("max_tokens", MAX_OUTPUT_TOKENS)
-        // Translating needs no reasoning, which would only cost time and tokens (a service that does not know the field ignores it)
-        putJsonObject("thinking") { put("type", "disabled") }
+        put("max_tokens", if (reasoning == ChatReasoning.Low) THINKING_MAX_OUTPUT_TOKENS else MAX_OUTPUT_TOKENS)
+        putReasoning(reasoning)
     }
 
-    fun choiceRequestBody(line: String, word: String, language: String?, options: List<String>, model: String): JsonObject = buildJsonObject {
+    fun choiceRequestBody(
+        line: String,
+        word: String,
+        language: String?,
+        options: List<String>,
+        model: String,
+        reasoning: ChatReasoning = ChatReasoning.Off,
+    ): JsonObject = buildJsonObject {
         put("model", model)
         putJsonArray("messages") {
             addJsonObject { put("role", "user"); put("content", GeminiProtocol.choicePrompt(line, word, language, options)) }
         }
-        put("max_tokens", CHOICE_MAX_OUTPUT_TOKENS)
-        putJsonObject("thinking") { put("type", "disabled") }
+        put("max_tokens", if (reasoning == ChatReasoning.Low) THINKING_CHOICE_MAX_OUTPUT_TOKENS else CHOICE_MAX_OUTPUT_TOKENS)
+        putReasoning(reasoning)
+    }
+
+    /** Translating needs little reasoning, which would only cost time and tokens. */
+    private fun JsonObjectBuilder.putReasoning(reasoning: ChatReasoning) {
+        when (reasoning) {
+            ChatReasoning.Off -> putJsonObject("thinking") { put("type", "disabled") }
+            ChatReasoning.Low -> put("reasoning_effort", "low")
+        }
     }
 
     /** The text of the first choice of an answer, or null when there is none. */

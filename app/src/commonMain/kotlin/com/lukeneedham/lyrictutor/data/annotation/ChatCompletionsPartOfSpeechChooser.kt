@@ -44,7 +44,7 @@ class ChatCompletionsPartOfSpeechChooser(
                 setBody(
                     Json.encodeToString(
                         JsonObject.serializer(),
-                        ChatCompletionsProtocol.choiceRequestBody(line, word, language, options, settings.model),
+                        ChatCompletionsProtocol.choiceRequestBody(line, word, language, options, settings.model, provider.reasoning),
                     ),
                 )
             }

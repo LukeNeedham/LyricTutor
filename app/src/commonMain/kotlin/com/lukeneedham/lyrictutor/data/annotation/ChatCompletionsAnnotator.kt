@@ -49,7 +49,7 @@ class ChatCompletionsAnnotator(
                     // The wait for the first byte of the answer: the default of the OkHttp engine is ten seconds, too short for a batch
                     socketTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                 }
-                setBody(Json.encodeToString(JsonObject.serializer(), ChatCompletionsProtocol.requestBody(song, lines, settings.model)))
+                setBody(Json.encodeToString(JsonObject.serializer(), ChatCompletionsProtocol.requestBody(song, lines, settings.model, provider.reasoning)))
             }
             val text = response.bodyAsText()
             if (!response.status.isSuccess()) {

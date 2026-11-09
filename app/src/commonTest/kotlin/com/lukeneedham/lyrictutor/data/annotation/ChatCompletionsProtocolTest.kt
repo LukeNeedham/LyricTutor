@@ -1,6 +1,7 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
+import com.lukeneedham.lyrictutor.data.settings.ChatReasoning
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -98,5 +99,23 @@ class ChatCompletionsProtocolTest {
     @Test
     fun everyProviderButGeminiHasAChatApi() {
         AiProvider.entries.filter { it != AiProvider.Gemini }.forEach { assertTrue(it.chatBaseUrl?.startsWith("https://") == true) }
+    }
+
+    @Test
+    fun aModelThatCannotStopThinkingIsAskedForLowEffortAndGivenRoom() {
+        val body = ChatCompletionsProtocol.requestBody(track, listOf(AnnotationLine(0, "hola")), "glm", ChatReasoning.Low).toString()
+        assertTrue("\"reasoning_effort\":\"low\"" in body)
+        assertTrue("thinking" !in body)
+        assertTrue("\"max_tokens\":16384" in body)
+
+        val choice = ChatCompletionsProtocol.choiceRequestBody("l", "w", null, listOf("Noun"), "glm", ChatReasoning.Low).toString()
+        assertTrue("\"reasoning_effort\":\"low\"" in choice)
+        assertTrue("\"max_tokens\":1024" in choice)
+    }
+
+    @Test
+    fun zAiAsksForLowEffortAndDeepSeekForNoThinking() {
+        assertEquals(ChatReasoning.Low, AiProvider.ZAi.reasoning)
+        assertEquals(ChatReasoning.Off, AiProvider.DeepSeek.reasoning)
     }
 }
