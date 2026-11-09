@@ -37,9 +37,10 @@ class ChatCompletionsAnnotator(
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
-        Logger.i("Asking ${settings.model} for lines ${lines.first().index}-${lines.last().index} of ${song.title}")
+        val url = ChatCompletionsProtocol.url(provider, settings.useCodingPlan)
+        Logger.i("Asking ${settings.model} at $url for lines ${lines.first().index}-${lines.last().index} of ${song.title}")
         val body = try {
-            val response = client.post("${ChatCompletionsProtocol.url(provider, settings.useCodingPlan)}/chat/completions") {
+            val response = client.post("$url/chat/completions") {
                 header(HttpHeaders.Authorization, "Bearer ${settings.apiKey}")
                 contentType(ContentType.Application.Json)
                 timeout {
@@ -52,7 +53,7 @@ class ChatCompletionsAnnotator(
             val text = response.bodyAsText()
             if (!response.status.isSuccess()) {
                 val reason = ChatCompletionsProtocol.errorMessage(text)
-                Logger.e("${provider.displayName} answered ${response.status} for model ${settings.model}: ${text.take(500)}")
+                Logger.e("${provider.displayName} answered ${response.status} at $url for model ${settings.model}: ${text.take(500)}")
                 return Result.failure(
                     when (response.status) {
                         HttpStatusCode.TooManyRequests -> AnnotationException.RateLimited()

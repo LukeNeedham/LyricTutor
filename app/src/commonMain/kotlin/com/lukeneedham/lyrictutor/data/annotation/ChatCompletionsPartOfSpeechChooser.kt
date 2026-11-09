@@ -31,8 +31,9 @@ class ChatCompletionsPartOfSpeechChooser(
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
+        val url = ChatCompletionsProtocol.url(provider, settings.useCodingPlan)
         val body = try {
-            val response = client.post("${ChatCompletionsProtocol.url(provider, settings.useCodingPlan)}/chat/completions") {
+            val response = client.post("$url/chat/completions") {
                 header(HttpHeaders.Authorization, "Bearer ${settings.apiKey}")
                 contentType(ContentType.Application.Json)
                 timeout {
@@ -48,7 +49,7 @@ class ChatCompletionsPartOfSpeechChooser(
             }
             val text = response.bodyAsText()
             if (!response.status.isSuccess()) {
-                Logger.e("${provider.displayName} answered ${response.status} when choosing a part of speech: ${text.take(300)}")
+                Logger.e("${provider.displayName} answered ${response.status} at $url when choosing a part of speech: ${text.take(300)}")
                 return Result.failure(
                     when (response.status) {
                         HttpStatusCode.TooManyRequests -> AnnotationException.RateLimited()

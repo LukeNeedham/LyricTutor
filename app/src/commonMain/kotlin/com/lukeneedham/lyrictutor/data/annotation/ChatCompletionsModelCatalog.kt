@@ -17,14 +17,15 @@ class ChatCompletionsModelCatalog(private val provider: AiProvider, private val 
     override suspend fun list(apiKey: String, useCodingPlan: Boolean): Result<List<String>> {
         if (apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
         return try {
-            val response = client.get("${ChatCompletionsProtocol.url(provider, useCodingPlan)}/models") {
+            val url = ChatCompletionsProtocol.url(provider, useCodingPlan)
+            val response = client.get("$url/models") {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
             }
             val text = response.bodyAsText()
             when {
                 response.status == HttpStatusCode.Unauthorized -> Result.failure(AnnotationException.InvalidKey())
                 !response.status.isSuccess() -> {
-                    Logger.e("Listing the models: ${provider.displayName} answered ${response.status}: ${text.take(300)}")
+                    Logger.e("Listing the models: ${provider.displayName} answered ${response.status} at $url: ${text.take(300)}")
                     Result.failure(AnnotationException.Failed("${provider.displayName} answered ${response.status.value}"))
                 }
                 else -> Result.success(ChatCompletionsProtocol.parseModels(text))
