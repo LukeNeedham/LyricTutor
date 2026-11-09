@@ -2,6 +2,7 @@ package com.lukeneedham.lyrictutor
 
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
 import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
+import com.lukeneedham.lyrictutor.data.annotation.ModelCatalogs
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.AiSettings
 import com.lukeneedham.lyrictutor.data.settings.ProviderSettings
@@ -36,7 +37,7 @@ class SettingsViewModelTest {
         }
     }
 
-    private fun catalogs(catalog: ModelCatalog) = AiProvider.entries.associateWith { catalog }
+    private fun catalogs(catalog: ModelCatalog) = ModelCatalogs(AiProvider.entries.associateWith { catalog })
 
     @BeforeTest
     fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -134,7 +135,7 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             isDebugEnabled = false,
             settingsStore = FakeSettingsStore(),
-            modelCatalogs = mapOf(AiProvider.Gemini to gemini, AiProvider.DeepSeek to deepSeek),
+            modelCatalogs = ModelCatalogs(mapOf(AiProvider.Gemini to gemini, AiProvider.DeepSeek to deepSeek)),
         )
         viewModel.onProviderChange(AiProvider.DeepSeek)
         viewModel.onApiKeyChange("k")

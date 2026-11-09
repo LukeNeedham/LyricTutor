@@ -3,7 +3,7 @@ package com.lukeneedham.lyrictutor.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
-import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
+import com.lukeneedham.lyrictutor.data.annotation.ModelCatalogs
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.AiSettings
 import com.lukeneedham.lyrictutor.data.settings.ProviderSettings
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     isDebugEnabled: Boolean,
     private val settingsStore: SettingsStore,
-    private val modelCatalogs: Map<AiProvider, ModelCatalog>,
+    private val modelCatalogs: ModelCatalogs,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState(isDebugEnabled = isDebugEnabled))
@@ -55,7 +55,7 @@ class SettingsViewModel(
     fun onShowModels() {
         _uiState.update { it.copy(models = ModelListUiState.Loading) }
         viewModelScope.launch {
-            val models = modelCatalogs.getValue(_uiState.value.provider).list(_uiState.value.apiKey.trim()).fold(
+            val models = modelCatalogs.of(_uiState.value.provider).list(_uiState.value.apiKey.trim()).fold(
                 onSuccess = { ModelListUiState.Loaded(it) },
                 onFailure = {
                     when (it) {
