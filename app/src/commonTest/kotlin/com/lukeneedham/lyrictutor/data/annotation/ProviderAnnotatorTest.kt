@@ -31,7 +31,8 @@ class ProviderAnnotatorTest {
         val store = FakeSettingsStore(AiSettings(provider = AiProvider.DeepSeek))
         val gemini = FakeAnnotator("gemini")
         val deepSeek = FakeAnnotator("deepseek")
-        val annotator = ProviderAnnotator(store, mapOf(AiProvider.Gemini to gemini, AiProvider.DeepSeek to deepSeek))
+        val zai = FakeAnnotator("zai")
+        val annotator = ProviderAnnotator(store, mapOf(AiProvider.Gemini to gemini, AiProvider.DeepSeek to deepSeek, AiProvider.ZAi to zai))
 
         assertEquals("deepseek", annotator.annotate(track, lines).getOrThrow().single().translation)
         assertEquals("deepseek", annotator.providerName)
@@ -40,7 +41,11 @@ class ProviderAnnotatorTest {
         store.settings = AiSettings(provider = AiProvider.Gemini)
         assertEquals("gemini", annotator.annotate(track, lines).getOrThrow().single().translation)
         assertEquals("gemini", annotator.providerName)
+        store.settings = AiSettings(provider = AiProvider.ZAi)
+        assertEquals("zai", annotator.annotate(track, lines).getOrThrow().single().translation)
+        assertEquals("zai", annotator.providerName)
         assertEquals(1, gemini.calls)
         assertEquals(1, deepSeek.calls)
+        assertEquals(1, zai.calls)
     }
 }

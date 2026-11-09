@@ -4,6 +4,7 @@ import com.lukeneedham.lyrictutor.data.annotation.AnnotationException
 import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.AiSettings
+import com.lukeneedham.lyrictutor.data.settings.ProviderSettings
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import com.lukeneedham.lyrictutor.ui.ModelListUiState
 import com.lukeneedham.lyrictutor.ui.SettingsViewModel
@@ -51,7 +52,7 @@ class SettingsViewModelTest {
 
     @Test
     fun theStateStartsWithTheSavedSettings() {
-        val store = FakeSettingsStore(AiSettings(geminiApiKey = "key", geminiModel = "model"))
+        val store = FakeSettingsStore(AiSettings(providers = mapOf(AiProvider.Gemini to ProviderSettings("key", "model"))))
         val state = SettingsViewModel(isDebugEnabled = false, settingsStore = store, modelCatalogs = catalogs(FakeModelCatalog())).uiState.value
         assertEquals("key", state.apiKey)
         assertEquals("model", state.model)
@@ -66,7 +67,7 @@ class SettingsViewModelTest {
         viewModel.onModelChange("  ")
         viewModel.onSave()
 
-        assertEquals(AiSettings(geminiApiKey = "key", geminiModel = AiProvider.Gemini.defaultModel), store.settings)
+        assertEquals(ProviderSettings("key", AiProvider.Gemini.defaultModel), store.settings.of(AiProvider.Gemini))
         assertTrue(viewModel.uiState.value.isSaved)
     }
 
@@ -116,18 +117,14 @@ class SettingsViewModelTest {
         assertEquals("", viewModel.uiState.value.apiKey)
         viewModel.onApiKeyChange(" deepseek-key ")
         viewModel.onModelChange("deepseek-x")
+        viewModel.onProviderChange(AiProvider.ZAi)
+        viewModel.onApiKeyChange("zai-key")
         viewModel.onSave()
 
-        assertEquals(
-            AiSettings(
-                provider = AiProvider.DeepSeek,
-                geminiApiKey = "gemini-key",
-                geminiModel = AiProvider.Gemini.defaultModel,
-                deepSeekApiKey = "deepseek-key",
-                deepSeekModel = "deepseek-x",
-            ),
-            store.settings,
-        )
+        assertEquals(AiProvider.ZAi, store.settings.provider)
+        assertEquals(ProviderSettings("gemini-key", AiProvider.Gemini.defaultModel), store.settings.of(AiProvider.Gemini))
+        assertEquals(ProviderSettings("deepseek-key", "deepseek-x"), store.settings.of(AiProvider.DeepSeek))
+        assertEquals(ProviderSettings("zai-key", AiProvider.ZAi.defaultModel), store.settings.of(AiProvider.ZAi))
     }
 
     @Test

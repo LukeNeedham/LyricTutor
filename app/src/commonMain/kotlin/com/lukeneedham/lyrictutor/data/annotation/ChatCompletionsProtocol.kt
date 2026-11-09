@@ -12,12 +12,10 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * The request and the response of DeepSeek's chat completions (the OpenAI format), as pure functions so that they are tested without a
- * network. DeepSeek has no schema for its answer, only a JSON mode: the shape is described in the prompt.
+ * The request and the response of an OpenAI-style chat completions API (DeepSeek, Z.AI), as pure functions so that they are tested
+ * without a network. These APIs have no schema for the answer, only a JSON mode: the shape is described in the prompt.
  */
-object DeepSeekProtocol {
-    const val BASE_URL = "https://api.deepseek.com"
-
+object ChatCompletionsProtocol {
     // A whole song (up to 80 lines) is about 4,000 tokens of JSON; 8,192 is the largest answer every model accepts
     private const val MAX_OUTPUT_TOKENS = 8_192
     private const val CHOICE_MAX_OUTPUT_TOKENS = 32
@@ -35,7 +33,7 @@ object DeepSeekProtocol {
         }
         putJsonObject("response_format") { put("type", "json_object") }
         put("max_tokens", MAX_OUTPUT_TOKENS)
-        // Translating needs no reasoning, which would only cost time and tokens
+        // Translating needs no reasoning, which would only cost time and tokens (a service that does not know the field ignores it)
         putJsonObject("thinking") { put("type", "disabled") }
     }
 
@@ -56,7 +54,7 @@ object DeepSeekProtocol {
     }
 
     /** The annotations in a chat completions answer. Fails with [AnnotationException.Failed] when there is no usable answer. */
-    fun parseResponse(body: String): Result<List<LineAnnotation>> {
+    fun parseResponse(body: String, providerName: String): Result<List<LineAnnotation>> {
         val text = answerText(body)
         if (text.isNullOrBlank()) {
             val reason = try {
@@ -64,9 +62,9 @@ object DeepSeekProtocol {
             } catch (e: IllegalArgumentException) {
                 null
             }
-            return Result.failure(AnnotationException.Failed("No answer from DeepSeek (finish reason: ${reason ?: "none"})"))
+            return Result.failure(AnnotationException.Failed("No answer from $providerName (finish reason: ${reason ?: "none"})"))
         }
-        return GeminiProtocol.parseLines(text, "DeepSeek")
+        return GeminiProtocol.parseLines(text, providerName)
     }
 
     /** The option an answer to [choiceRequestBody] names, or null when it names none. */

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.lukeneedham.common.logger.Logger
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.AiSettings
+import com.lukeneedham.lyrictutor.data.settings.ProviderSettings
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import kotlinx.coroutines.flow.first
 
@@ -26,10 +27,12 @@ class DataStoreSettingsStore(
         val preferences = dataStore.data.first()
         return AiSettings(
             provider = AiProvider.entries.firstOrNull { it.name == preferences[PROVIDER] } ?: AiProvider.Gemini,
-            geminiApiKey = decrypt(preferences[GEMINI_API_KEY]),
-            geminiModel = preferences[GEMINI_MODEL] ?: AiProvider.Gemini.defaultModel,
-            deepSeekApiKey = decrypt(preferences[DEEPSEEK_API_KEY]),
-            deepSeekModel = preferences[DEEPSEEK_MODEL] ?: AiProvider.DeepSeek.defaultModel,
+            providers = AiProvider.entries.associateWith { provider ->
+                ProviderSettings(
+                    apiKey = decrypt(preferences[apiKeyKey(provider)]),
+                    model = preferences[modelKey(provider)] ?: provider.defaultModel,
+                )
+            },
         )
     }
 
@@ -46,19 +49,20 @@ class DataStoreSettingsStore(
     override suspend fun save(settings: AiSettings) {
         dataStore.edit { preferences ->
             preferences[PROVIDER] = settings.provider.name
-            if (settings.geminiApiKey.isEmpty()) preferences.remove(GEMINI_API_KEY) else preferences[GEMINI_API_KEY] = cipher.encrypt(settings.geminiApiKey)
-            preferences[GEMINI_MODEL] = settings.geminiModel
-            if (settings.deepSeekApiKey.isEmpty()) preferences.remove(DEEPSEEK_API_KEY) else preferences[DEEPSEEK_API_KEY] = cipher.encrypt(settings.deepSeekApiKey)
-            preferences[DEEPSEEK_MODEL] = settings.deepSeekModel
+            for (provider in AiProvider.entries) {
+                val saved = settings.of(provider)
+                if (saved.apiKey.isEmpty()) preferences.remove(apiKeyKey(provider)) else preferences[apiKeyKey(provider)] = cipher.encrypt(saved.apiKey)
+                preferences[modelKey(provider)] = saved.model
+            }
         }
     }
 
     private companion object {
         val PROVIDER = stringPreferencesKey("ai_provider")
-        // The names of the Gemini keys are from before there was another provider: they stay, so that saved settings still read
-        val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key_encrypted")
-        val GEMINI_MODEL = stringPreferencesKey("gemini_model")
-        val DEEPSEEK_API_KEY = stringPreferencesKey("deepseek_api_key_encrypted")
-        val DEEPSEEK_MODEL = stringPreferencesKey("deepseek_model")
+
+        // "gemini_api_key_encrypted" and "gemini_model" are the names from before there was another service: Gemini's saved settings still read
+        fun apiKeyKey(provider: AiProvider) = stringPreferencesKey("${provider.name.lowercase()}_api_key_encrypted")
+
+        fun modelKey(provider: AiProvider) = stringPreferencesKey("${provider.name.lowercase()}_model")
     }
 }

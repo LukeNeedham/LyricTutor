@@ -1,6 +1,7 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
 import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
@@ -24,19 +25,19 @@ class GeminiPartOfSpeechChooser(
 ) : PartOfSpeechChooser {
 
     override suspend fun choose(line: String, word: String, language: String?, options: List<String>): Result<String?> {
-        val settings = settingsStore.load()
-        if (settings.geminiApiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
+        val settings = settingsStore.load().of(AiProvider.Gemini)
+        if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
         val text = try {
-            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent") {
-                header("x-goog-api-key", settings.geminiApiKey)
+            val response = client.post("https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent") {
+                header("x-goog-api-key", settings.apiKey)
                 contentType(ContentType.Application.Json)
                 timeout {
                     requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                     socketTimeoutMillis = REQUEST_TIMEOUT_MILLIS
                 }
-                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.choiceRequestBody(line, word, language, options, settings.geminiModel)))
+                setBody(Json.encodeToString(JsonObject.serializer(), GeminiProtocol.choiceRequestBody(line, word, language, options, settings.model)))
             }
             val body = response.bodyAsText()
             if (!response.status.isSuccess()) {
@@ -49,7 +50,7 @@ class GeminiPartOfSpeechChooser(
                     },
                 )
             }
-            Logger.i("${settings.geminiModel} chose a part of speech in ${mark.elapsedNow()}, tokens: ${GeminiProtocol.parseUsage(body) ?: "not reported"}")
+            Logger.i("${settings.model} chose a part of speech in ${mark.elapsedNow()}, tokens: ${GeminiProtocol.parseUsage(body) ?: "not reported"}")
             body
         } catch (e: CancellationException) {
             throw e

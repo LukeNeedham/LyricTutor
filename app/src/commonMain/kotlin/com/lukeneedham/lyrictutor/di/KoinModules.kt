@@ -1,9 +1,9 @@
 package com.lukeneedham.lyrictutor.di
 
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
-import com.lukeneedham.lyrictutor.data.annotation.DeepSeekAnnotator
-import com.lukeneedham.lyrictutor.data.annotation.DeepSeekModelCatalog
-import com.lukeneedham.lyrictutor.data.annotation.DeepSeekPartOfSpeechChooser
+import com.lukeneedham.lyrictutor.data.annotation.ChatCompletionsAnnotator
+import com.lukeneedham.lyrictutor.data.annotation.ChatCompletionsModelCatalog
+import com.lukeneedham.lyrictutor.data.annotation.ChatCompletionsPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.annotation.GeminiAnnotator
 import com.lukeneedham.lyrictutor.data.annotation.GeminiModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.GeminiPartOfSpeechChooser
@@ -52,19 +52,25 @@ object KoinModules {
         single<PartOfSpeechChooser> {
             ProviderPartOfSpeechChooser(
                 settingsStore = get(),
-                choosers = mapOf(
-                    AiProvider.Gemini to GeminiPartOfSpeechChooser(client = get(), settingsStore = get()),
-                    AiProvider.DeepSeek to DeepSeekPartOfSpeechChooser(client = get(), settingsStore = get()),
-                ),
+                choosers = AiProvider.entries.associateWith { provider ->
+                    if (provider == AiProvider.Gemini) {
+                        GeminiPartOfSpeechChooser(client = get(), settingsStore = get())
+                    } else {
+                        ChatCompletionsPartOfSpeechChooser(provider = provider, client = get(), settingsStore = get())
+                    }
+                },
             )
         }
         single<LyricsAnnotator> {
             ProviderAnnotator(
                 settingsStore = get(),
-                annotators = mapOf(
-                    AiProvider.Gemini to GeminiAnnotator(client = get(), settingsStore = get()),
-                    AiProvider.DeepSeek to DeepSeekAnnotator(client = get(), settingsStore = get()),
-                ),
+                annotators = AiProvider.entries.associateWith { provider ->
+                    if (provider == AiProvider.Gemini) {
+                        GeminiAnnotator(client = get(), settingsStore = get())
+                    } else {
+                        ChatCompletionsAnnotator(provider = provider, client = get(), settingsStore = get())
+                    }
+                },
             )
         }
         single { AnnotationRepository(songCache = get(), annotator = get()) }
@@ -85,10 +91,9 @@ object KoinModules {
             SettingsViewModel(
                 isDebugEnabled = DebugFlags.isEnabled,
                 settingsStore = get(),
-                modelCatalogs = mapOf(
-                    AiProvider.Gemini to GeminiModelCatalog(client = get()),
-                    AiProvider.DeepSeek to DeepSeekModelCatalog(client = get()),
-                ),
+                modelCatalogs = AiProvider.entries.associateWith { provider ->
+                    if (provider == AiProvider.Gemini) GeminiModelCatalog(client = get()) else ChatCompletionsModelCatalog(provider = provider, client = get())
+                },
             )
         }
     }

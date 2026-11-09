@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,19 +37,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukeneedham.common.ui.DebugButton
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
+import com.lukeneedham.lyrictutor.data.settings.ProviderSettings
 import com.lukeneedham.lyrictutor.generated.resources.Res
 import com.lukeneedham.lyrictutor.generated.resources.settings_about_title
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_intro
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_title
 import com.lukeneedham.lyrictutor.generated.resources.settings_attribution
-import com.lukeneedham.lyrictutor.generated.resources.settings_deepseek_api_key_label
-import com.lukeneedham.lyrictutor.generated.resources.settings_deepseek_api_key_note
-import com.lukeneedham.lyrictutor.generated.resources.settings_deepseek_model_label
-import com.lukeneedham.lyrictutor.generated.resources.settings_gemini_api_key_label
-import com.lukeneedham.lyrictutor.generated.resources.settings_gemini_api_key_note
-import com.lukeneedham.lyrictutor.generated.resources.settings_gemini_model_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note_deepseek
+import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note_gemini
+import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note_zai
+import com.lukeneedham.lyrictutor.generated.resources.settings_model_label
 import com.lukeneedham.lyrictutor.generated.resources.settings_provider_deepseek
 import com.lukeneedham.lyrictutor.generated.resources.settings_provider_gemini
+import com.lukeneedham.lyrictutor.generated.resources.settings_provider_zai
 import com.lukeneedham.lyrictutor.generated.resources.settings_provider_label
 import com.lukeneedham.lyrictutor.generated.resources.settings_key_hide
 import com.lukeneedham.lyrictutor.generated.resources.settings_key_show
@@ -76,6 +79,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** All of the page's UI. `internal`: the screenshots of the app use it too. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SettingsPageContent(
     state: SettingsUiState,
@@ -105,23 +109,19 @@ internal fun SettingsPageContent(
             Card(title = stringResource(Res.string.settings_ai_title)) {
                 AppText(text = stringResource(Res.string.settings_ai_intro), color = theme.onSurfaceVariant, size = 14.sp)
                 Field(label = stringResource(Res.string.settings_provider_label)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         for (provider in AiProvider.entries) {
                             val isSelected = provider == state.provider
                             AppButton(
-                                text = stringResource(
-                                    if (provider == AiProvider.DeepSeek) Res.string.settings_provider_deepseek else Res.string.settings_provider_gemini,
-                                ),
+                                text = providerName(provider),
                                 onClick = { onProviderChange(provider) },
                                 style = if (isSelected) AppButtonStyle.Primary else AppButtonStyle.Tonal,
                                 icon = if (isSelected) AppIcon.Check else null,
-                                modifier = Modifier.weight(1f),
                             )
                         }
                     }
                 }
-                val isDeepSeek = state.provider == AiProvider.DeepSeek
-                Field(label = stringResource(if (isDeepSeek) Res.string.settings_deepseek_api_key_label else Res.string.settings_gemini_api_key_label)) {
+                Field(label = stringResource(Res.string.settings_api_key_label, providerName(state.provider))) {
                     AppTextField(
                         value = state.apiKey,
                         onValueChange = onApiKeyChange,
@@ -136,13 +136,9 @@ internal fun SettingsPageContent(
                             )
                         },
                     )
-                    AppText(
-                        text = stringResource(if (isDeepSeek) Res.string.settings_deepseek_api_key_note else Res.string.settings_gemini_api_key_note),
-                        color = theme.onSurfaceVariant,
-                        size = 13.sp,
-                    )
+                    AppText(text = stringResource(providerKeyNote(state.provider)), color = theme.onSurfaceVariant, size = 13.sp)
                 }
-                Field(label = stringResource(if (isDeepSeek) Res.string.settings_deepseek_model_label else Res.string.settings_gemini_model_label)) {
+                Field(label = stringResource(Res.string.settings_model_label, providerName(state.provider))) {
                     AppTextField(value = state.model, onValueChange = onModelChange)
                     ModelButton(state = state.models, onShow = onShowModels)
                 }
@@ -163,6 +159,23 @@ internal fun SettingsPageContent(
     (state.models as? ModelListUiState.Loaded)?.let {
         ModelSheet(models = it.models, selected = state.model, onPick = onPickModel, onDismiss = onDismissModels)
     }
+}
+
+/** The name of a service, as the user knows it. */
+@Composable
+private fun providerName(provider: AiProvider): String = stringResource(
+    when (provider) {
+        AiProvider.Gemini -> Res.string.settings_provider_gemini
+        AiProvider.DeepSeek -> Res.string.settings_provider_deepseek
+        AiProvider.ZAi -> Res.string.settings_provider_zai
+    },
+)
+
+/** Where the key of a service comes from, and where it is sent. */
+private fun providerKeyNote(provider: AiProvider) = when (provider) {
+    AiProvider.Gemini -> Res.string.settings_api_key_note_gemini
+    AiProvider.DeepSeek -> Res.string.settings_api_key_note_deepseek
+    AiProvider.ZAi -> Res.string.settings_api_key_note_zai
 }
 
 @Composable
@@ -275,7 +288,7 @@ private fun ModelSheet(models: List<String>, selected: String, onPick: (String) 
 private fun Preview() {
     AppTheme {
         SettingsPageContent(
-            state = SettingsUiState(isDebugEnabled = true, geminiApiKey = "AIzaSyExampleKey", geminiModel = "gemini-3.8-flash"),
+            state = SettingsUiState(isDebugEnabled = true, providers = mapOf(AiProvider.Gemini to ProviderSettings("AIzaSyExampleKey", "gemini-3.8-flash"))),
             onBack = {},
             onProviderChange = {},
             onApiKeyChange = {},
@@ -296,11 +309,10 @@ private fun PreviewModels() {
         SettingsPageContent(
             state = SettingsUiState(
                 isDebugEnabled = false,
-                provider = AiProvider.DeepSeek,
-                deepSeekApiKey = "sk-example-key",
-                deepSeekModel = "deepseek-v4-flash",
+                provider = AiProvider.ZAi,
+                providers = mapOf(AiProvider.ZAi to ProviderSettings("example-key", "glm-5.1")),
                 isSaved = true,
-                models = ModelListUiState.Loaded(listOf("deepseek-v4-flash", "deepseek-v4-pro")),
+                models = ModelListUiState.Loaded(listOf("glm-5.1", "glm-5.2")),
             ),
             onBack = {},
             onProviderChange = {},
