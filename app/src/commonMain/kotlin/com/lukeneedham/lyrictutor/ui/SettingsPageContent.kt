@@ -310,9 +310,9 @@ private fun PreviewModels() {
             state = SettingsUiState(
                 isDebugEnabled = false,
                 provider = AiProvider.ZAi,
-                providers = mapOf(AiProvider.ZAi to ProviderSettings("example-key", "glm-5.1")),
+                providers = mapOf(AiProvider.ZAi to ProviderSettings("example-key", "glm-5.3-flash")),
                 isSaved = true,
-                models = ModelListUiState.Loaded(listOf("glm-5.1", "glm-5.2")),
+                models = ModelListUiState.Loaded(listOf("glm-5.3-flash", "glm-5.2")),
             ),
             onBack = {},
             onProviderChange = {},

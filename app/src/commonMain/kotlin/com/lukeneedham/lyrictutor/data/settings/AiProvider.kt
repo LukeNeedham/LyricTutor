@@ -10,5 +10,5 @@ enum class AiProvider(val displayName: String, val defaultModel: String, val cha
     DeepSeek("DeepSeek", "deepseek-v4-flash", "https://api.deepseek.com"),
 
     /** Z.AI (Zhipu, the GLM models), on its general API: a key of the GLM Coding Plan is for the coding endpoint and is refused here. */
-    ZAi("Z.AI", "glm-5.1", "https://api.z.ai/api/paas/v4", ChatReasoning.Low),
+    ZAi("Z.AI", "glm-5.3-flash", "https://api.z.ai/api/paas/v4", ChatReasoning.Low),
 }
