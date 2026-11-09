@@ -26,15 +26,13 @@ class ChatCompletionsPartOfSpeechChooser(
     private val settingsStore: SettingsStore,
 ) : PartOfSpeechChooser {
 
-    private val baseUrl = requireNotNull(provider.chatBaseUrl) { "${provider.displayName} has no chat completions API" }
-
     override suspend fun choose(line: String, word: String, language: String?, options: List<String>): Result<String?> {
         val settings = settingsStore.load().of(provider)
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
         val body = try {
-            val response = client.post("$baseUrl/chat/completions") {
+            val response = client.post("${ChatCompletionsProtocol.url(provider, settings.useCodingPlan)}/chat/completions") {
                 header(HttpHeaders.Authorization, "Bearer ${settings.apiKey}")
                 contentType(ContentType.Application.Json)
                 timeout {

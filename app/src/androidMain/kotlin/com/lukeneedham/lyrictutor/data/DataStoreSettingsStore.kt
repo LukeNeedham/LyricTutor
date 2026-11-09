@@ -3,6 +3,7 @@ package com.lukeneedham.lyrictutor.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -31,6 +32,7 @@ class DataStoreSettingsStore(
                 ProviderSettings(
                     apiKey = decrypt(preferences[apiKeyKey(provider)]),
                     model = preferences[modelKey(provider)] ?: provider.defaultModel,
+                    useCodingPlan = preferences[codingPlanKey(provider)] ?: false,
                 )
             },
         )
@@ -53,6 +55,7 @@ class DataStoreSettingsStore(
                 val saved = settings.of(provider)
                 if (saved.apiKey.isEmpty()) preferences.remove(apiKeyKey(provider)) else preferences[apiKeyKey(provider)] = cipher.encrypt(saved.apiKey)
                 preferences[modelKey(provider)] = saved.model
+                preferences[codingPlanKey(provider)] = saved.useCodingPlan
             }
         }
     }
@@ -62,6 +65,8 @@ class DataStoreSettingsStore(
 
         // "gemini_api_key_encrypted" and "gemini_model" are the names from before there was another service: Gemini's saved settings still read
         fun apiKeyKey(provider: AiProvider) = stringPreferencesKey("${provider.name.lowercase()}_api_key_encrypted")
+
+        fun codingPlanKey(provider: AiProvider) = booleanPreferencesKey("${provider.name.lowercase()}_coding_plan")
 
         fun modelKey(provider: AiProvider) = stringPreferencesKey("${provider.name.lowercase()}_model")
     }

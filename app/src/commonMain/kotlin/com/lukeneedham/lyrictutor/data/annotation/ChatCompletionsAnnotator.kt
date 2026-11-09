@@ -29,8 +29,6 @@ class ChatCompletionsAnnotator(
 
     override val providerName = provider.name.lowercase()
 
-    private val baseUrl = requireNotNull(provider.chatBaseUrl) { "${provider.displayName} has no chat completions API" }
-
     /** The tokens used for each song since the app started, for the log. */
     private val totals = mutableMapOf<String, TokenUsage>()
 
@@ -41,7 +39,7 @@ class ChatCompletionsAnnotator(
         val mark = TimeSource.Monotonic.markNow()
         Logger.i("Asking ${settings.model} for lines ${lines.first().index}-${lines.last().index} of ${song.title}")
         val body = try {
-            val response = client.post("$baseUrl/chat/completions") {
+            val response = client.post("${ChatCompletionsProtocol.url(provider, settings.useCodingPlan)}/chat/completions") {
                 header(HttpHeaders.Authorization, "Bearer ${settings.apiKey}")
                 contentType(ContentType.Application.Json)
                 timeout {

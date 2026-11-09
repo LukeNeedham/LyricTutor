@@ -5,6 +5,8 @@ data class ProviderSettings(
     /** Empty until the user enters it. */
     val apiKey: String = "",
     val model: String,
+    /** The key is of a subscription for coding tools (Z.AI's GLM Coding Plan), so its endpoint is asked: set by the user, never guessed. */
+    val useCodingPlan: Boolean = false,
 )
 
 data class AiSettings(

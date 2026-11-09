@@ -44,6 +44,10 @@ import com.lukeneedham.lyrictutor.generated.resources.settings_ai_intro
 import com.lukeneedham.lyrictutor.generated.resources.settings_ai_title
 import com.lukeneedham.lyrictutor.generated.resources.settings_attribution
 import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_label
+import com.lukeneedham.lyrictutor.generated.resources.settings_coding_plan
+import com.lukeneedham.lyrictutor.generated.resources.settings_coding_plan_note
+import com.lukeneedham.lyrictutor.generated.resources.settings_coding_plan_off
+import com.lukeneedham.lyrictutor.generated.resources.settings_coding_plan_on
 import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note_deepseek
 import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note_gemini
 import com.lukeneedham.lyrictutor.generated.resources.settings_api_key_note_zai
@@ -87,6 +91,7 @@ internal fun SettingsPageContent(
     onProviderChange: (AiProvider) -> Unit,
     onApiKeyChange: (String) -> Unit,
     onModelChange: (String) -> Unit,
+    onUseCodingPlanChange: (Boolean) -> Unit,
     onShowModels: () -> Unit,
     onDismissModels: () -> Unit,
     onPickModel: (String) -> Unit,
@@ -137,6 +142,18 @@ internal fun SettingsPageContent(
                         },
                     )
                     AppText(text = stringResource(providerKeyNote(state.provider)), color = theme.onSurfaceVariant, size = 13.sp)
+                }
+                // Only for a service that sells a subscription for coding tools besides its API
+                if (state.provider.codingPlanBaseUrl != null) {
+                    Field(label = stringResource(Res.string.settings_coding_plan)) {
+                        AppButton(
+                            text = stringResource(if (state.useCodingPlan) Res.string.settings_coding_plan_on else Res.string.settings_coding_plan_off),
+                            onClick = { onUseCodingPlanChange(!state.useCodingPlan) },
+                            style = if (state.useCodingPlan) AppButtonStyle.Primary else AppButtonStyle.Tonal,
+                            icon = if (state.useCodingPlan) AppIcon.Check else null,
+                        )
+                        AppText(text = stringResource(Res.string.settings_coding_plan_note), color = theme.onSurfaceVariant, size = 13.sp)
+                    }
                 }
                 Field(label = stringResource(Res.string.settings_model_label, providerName(state.provider))) {
                     AppTextField(value = state.model, onValueChange = onModelChange)
@@ -293,6 +310,7 @@ private fun Preview() {
             onProviderChange = {},
             onApiKeyChange = {},
             onModelChange = {},
+            onUseCodingPlanChange = {},
             onShowModels = {},
             onDismissModels = {},
             onPickModel = {},
@@ -318,6 +336,7 @@ private fun PreviewModels() {
             onProviderChange = {},
             onApiKeyChange = {},
             onModelChange = {},
+            onUseCodingPlanChange = {},
             onShowModels = {},
             onDismissModels = {},
             onPickModel = {},

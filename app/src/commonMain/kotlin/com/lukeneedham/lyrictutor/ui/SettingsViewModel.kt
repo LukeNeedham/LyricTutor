@@ -40,6 +40,8 @@ class SettingsViewModel(
 
     fun onModelChange(model: String) = edit { it.copy(model = model) }
 
+    fun onUseCodingPlanChange(useCodingPlan: Boolean) = edit { it.copy(useCodingPlan = useCodingPlan) }
+
     private fun edit(change: (ProviderSettings) -> ProviderSettings) = _uiState.update {
         it.copy(providers = it.providers + (it.provider to change(it.of(it.provider))), isSaved = false)
     }
@@ -55,7 +57,7 @@ class SettingsViewModel(
     fun onShowModels() {
         _uiState.update { it.copy(models = ModelListUiState.Loading) }
         viewModelScope.launch {
-            val models = modelCatalogs.of(_uiState.value.provider).list(_uiState.value.apiKey.trim()).fold(
+            val models = modelCatalogs.of(_uiState.value.provider).list(_uiState.value.apiKey.trim(), _uiState.value.useCodingPlan).fold(
                 onSuccess = { ModelListUiState.Loaded(it) },
                 onFailure = {
                     when (it) {
@@ -75,7 +77,11 @@ class SettingsViewModel(
             provider = state.provider,
             providers = AiProvider.entries.associateWith { provider ->
                 val edited = state.of(provider)
-                ProviderSettings(apiKey = edited.apiKey.trim(), model = edited.model.trim().ifEmpty { provider.defaultModel })
+                ProviderSettings(
+                    apiKey = edited.apiKey.trim(),
+                    model = edited.model.trim().ifEmpty { provider.defaultModel },
+                    useCodingPlan = edited.useCodingPlan,
+                )
             },
         )
         viewModelScope.launch {
