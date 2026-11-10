@@ -13,6 +13,7 @@ fun SettingsPage(onBack: () -> Unit, onOpenDebug: () -> Unit) {
     SettingsPageContent(
         state = state,
         onBack = onBack,
+        onProviderChange = viewModel::onProviderChange,
         onApiKeyChange = viewModel::onApiKeyChange,
         onModelChange = viewModel::onModelChange,
         onShowModels = viewModel::onShowModels,

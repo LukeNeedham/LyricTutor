@@ -104,10 +104,16 @@ object GeminiProtocol {
     /** The option an answer to [choiceRequestBody] names, or null when it names none (compared without case or quotes). */
     fun parseChoice(body: String, options: List<String>): String? = try {
         val text = json.decodeFromString(GeminiResponseDto.serializer(), body).candidates.orEmpty().firstOrNull()
-            ?.content?.parts?.mapNotNull { it.text }?.joinToString("")?.trim()?.trim('"', '\'')?.trim()
-        options.firstOrNull { it.equals(text, ignoreCase = true) }
+            ?.content?.parts?.mapNotNull { it.text }?.joinToString("")
+        matchChoice(text, options)
     } catch (e: IllegalArgumentException) {
         null
+    }
+
+    /** The option that [text] names, or null (compared without case, quotes or surrounding space). Shared by the providers. */
+    fun matchChoice(text: String?, options: List<String>): String? {
+        val answer = text?.trim()?.trim('"', '\'')?.trim()
+        return options.firstOrNull { it.equals(answer, ignoreCase = true) }
     }
 
     private fun responseSchema(): JsonElement {
@@ -191,12 +197,25 @@ object GeminiProtocol {
         if (text.isNullOrBlank()) {
             Result.failure(AnnotationException.Failed("No answer from Gemini (finish reason: ${candidate?.finishReason ?: "none"})"))
         } else {
-            Result.success(json.decodeFromString(GeminiBatchDto.serializer(), text).lines.orEmpty().mapNotNull { it.toDomain() })
+            parseLines(text, "Gemini")
         }
     } catch (e: SerializationException) {
         Result.failure(AnnotationException.Failed("Gemini's answer could not be read", e))
     } catch (e: IllegalArgumentException) {
         Result.failure(AnnotationException.Failed("Gemini's answer could not be read", e))
+    }
+
+    /**
+     * The annotations in the JSON text a model wrote (`{"lines":[...]}`, possibly inside a markdown fence), shared by the providers.
+     * [provider] names the model in the failure.
+     */
+    fun parseLines(text: String, provider: String): Result<List<LineAnnotation>> = try {
+        val unfenced = text.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+        Result.success(json.decodeFromString(GeminiBatchDto.serializer(), unfenced).lines.orEmpty().mapNotNull { it.toDomain() })
+    } catch (e: SerializationException) {
+        Result.failure(AnnotationException.Failed("$provider's answer could not be read", e))
+    } catch (e: IllegalArgumentException) {
+        Result.failure(AnnotationException.Failed("$provider's answer could not be read", e))
     }
 
     @Serializable

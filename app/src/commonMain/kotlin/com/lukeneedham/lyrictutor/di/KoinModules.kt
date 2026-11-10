@@ -1,11 +1,7 @@
 package com.lukeneedham.lyrictutor.di
 
 import com.lukeneedham.lyrictutor.data.annotation.AnnotationRepository
-import com.lukeneedham.lyrictutor.data.annotation.GeminiAnnotator
-import com.lukeneedham.lyrictutor.data.annotation.GeminiModelCatalog
-import com.lukeneedham.lyrictutor.data.annotation.GeminiPartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.annotation.LyricsAnnotator
-import com.lukeneedham.lyrictutor.data.annotation.ModelCatalog
 import com.lukeneedham.lyrictutor.data.annotation.PartOfSpeechChooser
 import com.lukeneedham.lyrictutor.data.catalog.SongCatalog
 import com.lukeneedham.lyrictutor.data.catalog.DeezerCatalog
@@ -44,9 +40,8 @@ object KoinModules {
         single { LyricsRepository(songCache = get(), source = get()) }
 
         single<WiktionaryLookup> { WiktionaryClient(client = get(), pageCache = get()) }
-        single<ModelCatalog> { GeminiModelCatalog(client = get()) }
-        single<PartOfSpeechChooser> { GeminiPartOfSpeechChooser(client = get(), settingsStore = get()) }
-        single<LyricsAnnotator> { GeminiAnnotator(client = get(), settingsStore = get()) }
+        single<PartOfSpeechChooser> { AiProviderFactory.partOfSpeechChooser(client = get(), settingsStore = get()) }
+        single<LyricsAnnotator> { AiProviderFactory.annotator(client = get(), settingsStore = get()) }
         single { AnnotationRepository(songCache = get(), annotator = get()) }
 
         viewModel { HomeViewModel(songCache = get(), trackSearcher = get(), catalog = get()) }
@@ -61,7 +56,8 @@ object KoinModules {
                 artColorExtractor = get(),
                 playProviderStore = get(),
             ) }
-        viewModel { SettingsViewModel(isDebugEnabled = DebugFlags.isEnabled, settingsStore = get(), modelCatalog = get()) }
+        single { AiProviderFactory.modelCatalogs(client = get()) }
+        viewModel { SettingsViewModel(isDebugEnabled = DebugFlags.isEnabled, settingsStore = get(), modelCatalogs = get()) }
     }
 
     val modules: List<Module> = listOf(app)

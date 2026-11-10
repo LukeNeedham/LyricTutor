@@ -1,6 +1,7 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
 import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import io.ktor.client.HttpClient
@@ -33,7 +34,7 @@ class GeminiAnnotator(
         ((this[trackId] ?: TokenUsage()) + usage).also { this[trackId] = it }
 
     override suspend fun annotate(song: TrackInfo, lines: List<AnnotationLine>): Result<List<LineAnnotation>> {
-        val settings = settingsStore.load()
+        val settings = settingsStore.load().of(AiProvider.Gemini)
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()

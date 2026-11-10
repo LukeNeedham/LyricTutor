@@ -55,10 +55,10 @@
 
     <!-- Translations -->
     <string name="annotation_progress">Translating… %1$d of %2$d lines</string>
-    <string name="annotation_missing_key">Add your Gemini API key in Settings to see translations and word meanings.</string>
-    <string name="annotation_invalid_key">Gemini refused your API key. Check it in Settings.</string>
-    <string name="annotation_rate_limited">Gemini says you have used up its free limit for now. Try again in a little while.</string>
-    <string name="annotation_daily_limit">The free limit for today is used up for this model. Try again tomorrow, or choose another model in Settings.</string>
+    <string name="annotation_missing_key">Add your AI API key in Settings to see translations and word meanings.</string>
+    <string name="annotation_invalid_key">The AI service refused your API key. Check it in Settings.</string>
+    <string name="annotation_rate_limited">The AI service says you have used up its limit for now. Try again in a little while.</string>
+    <string name="annotation_daily_limit">The limit for today is used up for this model. Try again tomorrow, or choose another model in Settings.</string>
     <string name="annotation_failed">Could not get the translations.</string>
     <string name="annotation_open_settings">Open Settings</string>
     <string name="annotation_retry">Try again</string>
@@ -73,10 +73,16 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_ai_title">AI translations</string>
-    <string name="settings_ai_intro">Translations are written by Gemini, an AI from Google. Add your own free key to turn them on.</string>
-    <string name="settings_api_key_label">Gemini API key</string>
-    <string name="settings_model_label">Gemini model</string>
-    <string name="settings_api_key_note">Your own key from Google AI Studio. It is stored encrypted on this device and sent only to Google.</string>
+    <string name="settings_ai_intro">Translations are written by an AI: Gemini (Google), DeepSeek or Z.AI. Pick one and add your own key to turn them on.</string>
+    <string name="settings_provider_label">AI service</string>
+    <string name="settings_provider_gemini">Gemini</string>
+    <string name="settings_provider_deepseek">DeepSeek</string>
+    <string name="settings_provider_zai">Z.AI</string>
+    <string name="settings_api_key_label">%1$s API key</string>
+    <string name="settings_model_label">%1$s model</string>
+    <string name="settings_api_key_note_gemini">Your own key from Google AI Studio. It is stored encrypted on this device and sent only to Google.</string>
+    <string name="settings_api_key_note_deepseek">Your own key from the DeepSeek platform. It is stored encrypted on this device and sent only to DeepSeek.</string>
+    <string name="settings_api_key_note_zai">Your own key from the Z.AI platform (a pay-as-you-go key with credit: a GLM Coding Plan subscription is not accepted). It is stored encrypted on this device and sent only to Z.AI.</string>
     <string name="settings_key_show">Show the key</string>
     <string name="settings_key_hide">Hide the key</string>
     <string name="settings_save">Save</string>
@@ -87,6 +93,6 @@
     <string name="settings_models_loading">Getting the models…</string>
     <string name="settings_models_none">No usable models found for this key.</string>
     <string name="settings_models_need_key">Enter your API key first.</string>
-    <string name="settings_models_invalid_key">Gemini refused this key.</string>
+    <string name="settings_models_invalid_key">The AI service refused this key.</string>
     <string name="settings_models_failed">Could not get the models. Check your connection.</string>
 </resources>

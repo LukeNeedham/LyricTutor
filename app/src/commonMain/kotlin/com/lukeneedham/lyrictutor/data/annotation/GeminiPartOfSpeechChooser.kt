@@ -1,6 +1,7 @@
 package com.lukeneedham.lyrictutor.data.annotation
 
 import com.lukeneedham.common.logger.Logger
+import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.SettingsStore
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
@@ -24,7 +25,7 @@ class GeminiPartOfSpeechChooser(
 ) : PartOfSpeechChooser {
 
     override suspend fun choose(line: String, word: String, language: String?, options: List<String>): Result<String?> {
-        val settings = settingsStore.load()
+        val settings = settingsStore.load().of(AiProvider.Gemini)
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
