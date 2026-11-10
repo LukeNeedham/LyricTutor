@@ -31,10 +31,8 @@ class SettingsViewModelTest {
 
     private class FakeModelCatalog(private val result: Result<List<String>> = Result.success(emptyList())) : ModelCatalog {
         var asked: String? = null
-        var askedWithCodingPlan: Boolean? = null
-        override suspend fun list(apiKey: String, useCodingPlan: Boolean): Result<List<String>> {
+        override suspend fun list(apiKey: String): Result<List<String>> {
             asked = apiKey
-            askedWithCodingPlan = useCodingPlan
             return result
         }
     }
@@ -146,22 +144,5 @@ class SettingsViewModelTest {
         assertEquals(null, gemini.asked)
         assertEquals("k", deepSeek.asked)
         assertEquals(ModelListUiState.Loaded(listOf("deepseek-a")), viewModel.uiState.value.models)
-    }
-
-    @Test
-    fun theCodingPlanChoiceIsKeptSavedAndUsedToAskForTheModels() {
-        val store = FakeSettingsStore()
-        val catalog = FakeModelCatalog()
-        val viewModel = SettingsViewModel(isDebugEnabled = false, settingsStore = store, modelCatalogs = catalogs(catalog))
-        assertEquals(false, viewModel.uiState.value.useCodingPlan)
-        viewModel.onProviderChange(AiProvider.ZAi)
-        viewModel.onUseCodingPlanChange(true)
-        viewModel.onApiKeyChange("k")
-        viewModel.onShowModels()
-        viewModel.onSave()
-
-        assertEquals(true, catalog.askedWithCodingPlan)
-        assertEquals(true, store.settings.of(AiProvider.ZAi).useCodingPlan)
-        assertEquals(false, store.settings.of(AiProvider.DeepSeek).useCodingPlan)
     }
 }

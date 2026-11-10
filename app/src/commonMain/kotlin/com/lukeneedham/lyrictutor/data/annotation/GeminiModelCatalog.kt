@@ -12,7 +12,7 @@ import kotlinx.coroutines.CancellationException
 
 class GeminiModelCatalog(private val client: HttpClient) : ModelCatalog {
 
-    override suspend fun list(apiKey: String, useCodingPlan: Boolean): Result<List<String>> {
+    override suspend fun list(apiKey: String): Result<List<String>> {
         if (apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
         return try {
             val response = client.get("https://generativelanguage.googleapis.com/v1beta/models") {

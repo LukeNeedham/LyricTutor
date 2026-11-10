@@ -22,7 +22,4 @@ data class SettingsUiState(
 
     /** The model being edited: the one of [provider]. */
     val model: String get() = of(provider).model
-
-    /** Whether the key being edited is of a coding subscription. */
-    val useCodingPlan: Boolean get() = of(provider).useCodingPlan
 }

@@ -14,10 +14,10 @@ import kotlinx.coroutines.CancellationException
 /** The models of an OpenAI-style API (`GET <base>/models`), for DeepSeek and Z.AI. */
 class ChatCompletionsModelCatalog(private val provider: AiProvider, private val client: HttpClient) : ModelCatalog {
 
-    override suspend fun list(apiKey: String, useCodingPlan: Boolean): Result<List<String>> {
+    override suspend fun list(apiKey: String): Result<List<String>> {
         if (apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
         return try {
-            val url = ChatCompletionsProtocol.url(provider, useCodingPlan)
+            val url = ChatCompletionsProtocol.url(provider)
             val response = client.get("$url/models") {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
             }

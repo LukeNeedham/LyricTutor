@@ -3,7 +3,6 @@ package com.lukeneedham.lyrictutor.data.annotation
 import com.lukeneedham.lyrictutor.data.apiJson
 import com.lukeneedham.lyrictutor.data.settings.AiProvider
 import com.lukeneedham.lyrictutor.data.settings.ChatReasoning
-import com.lukeneedham.lyrictutor.data.settings.chatUrl
 import com.lukeneedham.lyrictutor.data.track.TrackInfo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
@@ -31,8 +30,8 @@ object ChatCompletionsProtocol {
     private val json = apiJson
 
     /** The endpoint to ask for [provider]; it must have a chat completions API. */
-    fun url(provider: AiProvider, useCodingPlan: Boolean): String =
-        requireNotNull(provider.chatUrl(useCodingPlan)) { "${provider.displayName} has no chat completions API" }
+    fun url(provider: AiProvider): String =
+        requireNotNull(provider.chatBaseUrl) { "${provider.displayName} has no chat completions API" }
 
     private const val FORMAT = """Answer with a single JSON object and nothing else, in this shape:
 {"lines":[{"index":0,"translation":"...","language":"Spanish","otherLanguages":[{"word":"hey","language":"English"}]}]}"""

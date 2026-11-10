@@ -16,7 +16,6 @@ fun SettingsPage(onBack: () -> Unit, onOpenDebug: () -> Unit) {
         onProviderChange = viewModel::onProviderChange,
         onApiKeyChange = viewModel::onApiKeyChange,
         onModelChange = viewModel::onModelChange,
-        onUseCodingPlanChange = viewModel::onUseCodingPlanChange,
         onShowModels = viewModel::onShowModels,
         onDismissModels = viewModel::onDismissModels,
         onPickModel = viewModel::onPickModel,

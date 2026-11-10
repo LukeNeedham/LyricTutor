@@ -37,7 +37,7 @@ class ChatCompletionsAnnotator(
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
-        val url = ChatCompletionsProtocol.url(provider, settings.useCodingPlan)
+        val url = ChatCompletionsProtocol.url(provider)
         Logger.i("Asking ${settings.model} at $url for lines ${lines.first().index}-${lines.last().index} of ${song.title}")
         val body = try {
             val response = client.post("$url/chat/completions") {

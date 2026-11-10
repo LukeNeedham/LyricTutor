@@ -120,10 +120,8 @@ class ChatCompletionsProtocolTest {
     }
 
     @Test
-    fun theCodingPlanHasItsOwnEndpointWhereTheServiceHasOne() {
-        assertEquals("https://api.z.ai/api/paas/v4", ChatCompletionsProtocol.url(AiProvider.ZAi, useCodingPlan = false))
-        assertEquals("https://api.z.ai/api/coding/paas/v4", ChatCompletionsProtocol.url(AiProvider.ZAi, useCodingPlan = true))
-        // DeepSeek has no such plan: the choice changes nothing
-        assertEquals("https://api.deepseek.com", ChatCompletionsProtocol.url(AiProvider.DeepSeek, useCodingPlan = true))
+    fun theEndpointIsTheOneOfTheProvider() {
+        assertEquals("https://api.z.ai/api/paas/v4", ChatCompletionsProtocol.url(AiProvider.ZAi))
+        assertEquals("https://api.deepseek.com", ChatCompletionsProtocol.url(AiProvider.DeepSeek))
     }
 }

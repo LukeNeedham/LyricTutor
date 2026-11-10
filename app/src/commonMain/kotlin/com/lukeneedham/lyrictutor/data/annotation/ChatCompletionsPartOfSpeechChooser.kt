@@ -31,7 +31,7 @@ class ChatCompletionsPartOfSpeechChooser(
         if (settings.apiKey.isBlank()) return Result.failure(AnnotationException.MissingKey())
 
         val mark = TimeSource.Monotonic.markNow()
-        val url = ChatCompletionsProtocol.url(provider, settings.useCodingPlan)
+        val url = ChatCompletionsProtocol.url(provider)
         val body = try {
             val response = client.post("$url/chat/completions") {
                 header(HttpHeaders.Authorization, "Bearer ${settings.apiKey}")
